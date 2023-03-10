@@ -1,0 +1,10 @@
+# nix
+result
+.direnv
+
+# build
+a.out
+build
+
+# data
+mnist
