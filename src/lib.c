@@ -405,6 +405,8 @@ int train()
     }
     printf("predicted: %d, accurarcy: %f\n", predicted_correctly, ((double)predicted_correctly) / dataset.size);
 
+    network_destroy(network);
+
     return 0;
 }
 

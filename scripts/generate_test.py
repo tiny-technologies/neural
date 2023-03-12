@@ -93,6 +93,8 @@ code = [
     *(f"free({name});" for (name, _) in gradients),
     "// free inputs and labels",
     *(f"free({name});" for name in ["inputs", "label"]),
+    "// destroy network",
+    "network_destroy(network);",
 ]
 
 indent = lambda text: "    " + text.replace("\n", "\n    ")
