@@ -34,13 +34,13 @@ These are common commands:
 
 ### Tooling
 
-When you `cd` into this repository, [`direnv`](https://direnv.net/) activates our a [`Nix`](https://zero-to-nix.com/)-environment containing the all required development tools.
+When you `cd` into this repository, [`direnv`](https://direnv.net/) activates a [`Nix`](https://zero-to-nix.com/)-environment containing all required development tools.
 
 ### Workflow
 
 The [`just`](https://github.com/casey/just) command is the main entry point into this repository. It is a convenient way to execute commands and has a documenting purpose by making important project-specific commands visible.
 
-To list all commands run:
+To list all commands, run:
 
 ```sh
 just
@@ -52,13 +52,13 @@ Download the MNIST dataset:
 just download
 ```
 
-Compile and run debug build:
+Compile and run the debug build:
 
 ```sh
 just debug
 ```
 
-Compile and run release build:
+Compile and run the release build:
 
 ```sh
 just release
