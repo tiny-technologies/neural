@@ -96,6 +96,10 @@ void test_back_propagation()
     free(nabla_b1);
     free(nabla_w2);
     free(nabla_b2);
+    free(nabla_w[0]);
+    free(nabla_w[1]);
+    free(nabla_b[0]);
+    free(nabla_b[1]);
     // free inputs and labels
     free(inputs);
     free(label);
