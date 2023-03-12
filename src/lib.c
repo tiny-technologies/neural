@@ -20,80 +20,8 @@ typedef struct Dataset
     int cols;
 } Dataset;
 
-typedef struct Array
-{
-    double *data;
-    int *size;
-} Array;
-
-// MATH
-
-void print_matrix(int rows, int cols, double *matrix)
-{
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < cols; j++)
-        {
-            printf("%.1f ", matrix[i * cols + j]);
-        }
-        printf("\n");
-    }
-}
-
-void print_vector(int size, double *vector)
-{
-    for (int i = 0; i < size; i++)
-    {
-        printf("%.2f ", vector[i]);
-    }
-    printf("\n");
-}
-
-void dot(int rows, int cols, double *matrix, double *vector, double *result)
-{
-    for (int i = 0; i < rows; i++)
-    {
-        result[i] = 0;
-        for (int j = 0; j < cols; j++)
-        {
-            result[i] += matrix[i * cols + j] * vector[j];
-        }
-    }
-}
-
-void add(int size, double *a, double *b, double *result)
-{
-    for (int i = 0; i < size; i++)
-    {
-        result[i] = a[i] + b[i];
-    }
-}
-
-void sub(int size, double *a, double *b, double *result)
-{
-    for (int i = 0; i < size; i++)
-    {
-        result[i] = a[i] - b[i];
-    }
-}
-
-void scale(int size, double factor, double *a, double *result)
-{
-    for (int i = 0; i < size; i++)
-    {
-        result[i] = factor * a[i];
-    }
-}
-
-void sigmoid(int size, double *a, double *result)
-{
-    for (int i = 0; i < size; i++)
-    {
-        result[i] = 1.0 / (1.0 + exp(-a[i]));
-    }
-}
-
 // UTILS
+
 double *random_array(int size)
 {
     double *array = malloc(size * sizeof(double));
@@ -104,156 +32,211 @@ double *random_array(int size)
     return array;
 }
 
+void print_array(int size, double *data)
+{
+    for (int i = 0; i < size; i++)
+    {
+        printf("%.2f ", data[i]);
+    }
+    printf("\n");
+}
+
 // NETWORK
 
 typedef struct Network
 {
-    double *w1;
-    double *b1;
-    double *w2;
-    double *b2;
-    int s0;
-    int s1;
-    int s2;
+    double **neurons;
+    double **weights;
+    double **biases;
+    double **weights_grad;
+    double **biases_grad;
+    int *dims;
+    int ndim;
 } Network;
 
-Network make_network(int s0, int s1, int s2)
+Network network_create(int ndim, int *dims)
 {
     Network network = {
-        .w1 = random_array(s0 * s1),
-        .b1 = random_array(s1),
-        .w2 = random_array(s1 * s2),
-        .b2 = random_array(s2),
-        .s0 = s0,
-        .s1 = s1,
-        .s2 = s2,
+        .neurons = malloc(ndim * sizeof(double *)),
+        .weights = malloc(ndim * sizeof(double *)),
+        .biases = malloc(ndim * sizeof(double *)),
+        .weights_grad = malloc(ndim * sizeof(double *)),
+        .biases_grad = malloc(ndim * sizeof(double *)),
+        .dims = malloc(ndim * sizeof(int)),
+        ndim = ndim,
     };
+    for (int i = 1; i < ndim; i++)
+    {
+        network.neurons[i] = random_array(dims[i]);
+        network.weights[i] = random_array(dims[i] * dims[i - 1]);
+        network.biases[i] = random_array(dims[i]);
+        network.weights_grad[i] = malloc(dims[i] * dims[i - 1] * sizeof(double));
+        network.biases_grad[i] = malloc(dims[i] * sizeof(double));
+    }
+    for (int i = 0; i < ndim; i++)
+    {
+        network.dims[i] = dims[i];
+    }
     return network;
 }
 
-void destory_network(Network network)
+void network_destroy(Network network)
 {
-    free(network.w1);
-    free(network.b2);
-    free(network.w2);
-    free(network.b1);
+    for (int i = 1; i < network.ndim; i++)
+    {
+        free(network.neurons[i]);
+        free(network.weights[i]);
+        free(network.biases[i]);
+        free(network.weights_grad[i]);
+        free(network.biases_grad[i]);
+    }
+    free(network.neurons);
+    free(network.weights);
+    free(network.biases);
+    free(network.weights_grad);
+    free(network.biases_grad);
+    free(network.dims);
 }
 
-void feed_forward(Network network, double *input, double *output)
+// ML STUFF
+
+double compute_loss(Network network, double *label)
 {
-    // first layer
-    double a1[network.s1];
-    dot(network.s1, network.s0, network.w1, input, a1);
-    add(network.s1, network.b1, a1, a1);
-    sigmoid(network.s1, a1, a1);
-    // second layer
-    dot(network.s2, network.s1, network.w2, a1, output);
-    add(network.s2, network.b2, output, output);
-    sigmoid(network.s2, output, output);
-}
-
-double back_propagation(Network network, double *input, double *label, double *nabla_ws[], double *nabla_bs[])
-{
-    double *a1 = malloc(network.s1 * sizeof(double));
-    double *a2 = malloc(network.s2 * sizeof(double));
-
-    // forward pass
-    dot(network.s1, network.s0, network.w1, input, a1);
-    add(network.s1, network.b1, a1, a1);
-    sigmoid(network.s1, a1, a1);
-    // second layer
-    dot(network.s2, network.s1, network.w2, a1, a2);
-    add(network.s2, network.b2, a2, a2);
-    sigmoid(network.s2, a2, a2);
-
-    // backward pass
-    for (int i = 0; i < network.s2; i++)
-    {
-        nabla_bs[1][i] = 2 * (a2[i] - label[i]) * (a2[i] * (1 - a2[i]));
-        for (int j = 0; j < network.s1; j++)
-        {
-            nabla_ws[1][i * network.s1 + j] = a1[j] * nabla_bs[1][i];
-        }
-    }
-
-    for (int i = 0; i < network.s1; i++)
-    {
-        nabla_bs[0][i] = 0;
-        // wT * delta
-        for (int j = 0; j < network.s2; j++)
-        {
-            nabla_bs[0][i] += network.w2[j * network.s1 + i] * nabla_bs[1][j];
-        }
-        nabla_bs[0][i] *= a1[i] * (1 - a1[i]);
-
-        for (int j = 0; j < network.s0; j++)
-        {
-            nabla_ws[0][i * network.s0 + j] = input[j] * nabla_bs[0][i];
-        }
-    }
-
     double loss = 0;
-    for (int i = 0; i < network.s2; i++)
+    for (int i = 0; i < network.dims[network.ndim - 1]; i++)
     {
-        double tmp = a2[i] - label[i];
+        double tmp = network.neurons[network.ndim - 1][i] - label[i];
         loss += tmp * tmp;
     }
-
-    free(a1);
-    free(a2);
-
     return loss;
+}
+
+void forward(Network network, double *inputs)
+{
+    network.neurons[0] = inputs;
+
+    int ndim = network.ndim;
+    int *dims = network.dims;
+    double **a = network.neurons;
+    double **w = network.weights;
+    double **b = network.biases;
+
+    for (int l = 1; l < ndim; l++)
+    {
+        for (int i = 0; i < dims[l]; i++)
+        {
+            a[l][i] = 0;
+            for (int j = 0; j < dims[l - 1]; j++)
+            {
+                a[l][i] += w[l][i * dims[l - 1] + j] * a[l - 1][j];
+            }
+            a[l][i] += b[l][i];
+            a[l][i] = 1.0 / (1.0 + exp(-a[l][i]));
+        }
+    }
+}
+
+void backward(Network network, double *label)
+{
+    int ndim = network.ndim;
+    int *dims = network.dims;
+    double **a = network.neurons;
+    double **w = network.weights;
+    double **w_grad = network.weights_grad;
+    double **b_grad = network.biases_grad;
+
+    int l = ndim - 1;
+    for (int i = 0; i < dims[l]; i++)
+    {
+        b_grad[l][i] = 2 * (a[l][i] - label[i]) * a[l][i] * (1 - a[l][i]);
+        for (int j = 0; j < dims[l - 1]; j++)
+        {
+            w_grad[l][i * dims[l - 1] + j] = a[l - 1][j] * b_grad[l][i];
+        }
+    }
+
+    for (int l = ndim - 2; l == 1; l--)
+    {
+        for (int i = 0; i < dims[l]; i++)
+        {
+            b_grad[l][i] = 0;
+            for (int j = 0; j < dims[l + 1]; j++)
+            {
+                b_grad[l][i] += w[l + 1][j * dims[l] + i] * b_grad[l + 1][j];
+            }
+            b_grad[l][i] *= a[l][i] * (1 - a[l][i]);
+
+            for (int j = 0; j < network.dims[l - 1]; j++)
+            {
+                w_grad[l][i * dims[l - 1] + j] = a[l - 1][j] * b_grad[l][i];
+            }
+        }
+    }
 }
 
 double update_mini_batch(Network network, Image *images, int batch_size)
 {
-    double *nabla_w[] = {
-        calloc(sizeof(double), network.s0 * network.s1),
-        calloc(sizeof(double), network.s1 * network.s2),
-    };
-    double *nabla_b[] = {
-        calloc(sizeof(double), network.s1),
-        calloc(sizeof(double), network.s2),
-    };
+    int ndim = network.ndim;
+    int *dims = network.dims;
 
-    double *nabla_ws[] = {
-        malloc(network.s0 * network.s1 * sizeof(double)),
-        malloc(network.s1 * network.s2 * sizeof(double)),
-    };
-    double *nabla_bs[] = {
-        malloc(network.s1 * sizeof(double)),
-        malloc(network.s2 * sizeof(double)),
-    };
+    // allocate arrays to accumulate gradients
+    double **weights_grad = malloc(ndim * sizeof(double *));
+    double **biases_grad = malloc(ndim * sizeof(double *));
 
+    for (int l = 1; l < ndim; l++)
+    {
+        weights_grad[l] = calloc(sizeof(double), dims[l] * dims[l - 1]);
+        biases_grad[l] = calloc(sizeof(double), dims[l]);
+    }
+
+    // accumulate intermediate gradients from backpropagation
     double loss = 0;
-    for (int i = 0; i < batch_size; i++)
+    for (int b = 0; b < batch_size; b++)
     {
-        loss += back_propagation(network, images[i].data, images[i].label, nabla_ws, nabla_bs);
-        add(network.s0 * network.s1, nabla_w[0], nabla_ws[0], nabla_w[0]);
-        add(network.s1 * network.s2, nabla_w[1], nabla_ws[1], nabla_w[1]);
-        add(network.s1, nabla_b[0], nabla_bs[0], nabla_b[0]);
-        add(network.s2, nabla_b[1], nabla_bs[1], nabla_b[1]);
+        forward(network, images[b].data);
+        loss += compute_loss(network, images[b].label);
+
+        backward(network, images[b].label);
+
+        for (int l = 1; l < ndim; l++)
+        {
+            for (int i = 0; i < dims[l]; i++)
+            {
+                biases_grad[l][i] += network.biases_grad[l][i];
+                for (int j = 0; j < dims[l - 1]; j++)
+                {
+                    int idx = i * dims[l - 1] + j;
+                    weights_grad[l][idx] += network.weights_grad[l][idx];
+                }
+            }
+        }
     }
 
-    double learning_rate = 0.005;
+    // update weights and biases
+    double learning_rate = 0.1;
     double factor = learning_rate / batch_size;
-    scale(network.s0 * network.s1, factor, nabla_w[0], nabla_w[0]);
-    scale(network.s1 * network.s2, factor, nabla_w[1], nabla_w[1]);
-    scale(network.s1, factor, nabla_b[0], nabla_b[0]);
-    scale(network.s2, factor, nabla_b[1], nabla_b[1]);
 
-    sub(network.s0 * network.s1, network.w1, nabla_w[0], network.w1);
-    sub(network.s1 * network.s2, network.w2, nabla_w[1], network.w2);
-    sub(network.s1, network.b1, nabla_b[0], network.b1);
-    sub(network.s2, network.b2, nabla_b[1], network.b2);
-
-    for (int i = 0; i < 2; i++)
+    for (int l = 1; l < ndim; l++)
     {
-        free(nabla_w[i]);
-        free(nabla_b[i]);
-        free(nabla_ws[i]);
-        free(nabla_bs[i]);
+        for (int i = 0; i < dims[l]; i++)
+        {
+            network.biases[l][i] -= factor * biases_grad[l][i];
+            for (int j = 0; j < dims[l - 1]; j++)
+            {
+                int idx = i * dims[l - 1] + j;
+                network.weights[l][idx] -= factor * weights_grad[l][idx];
+            }
+        }
     }
+
+    // free gradient arrays
+    for (int i = 1; i < network.ndim; i++)
+    {
+        free(weights_grad[i]);
+        free(biases_grad[i]);
+    }
+    free(weights_grad);
+    free(biases_grad);
 
     return loss;
 }
@@ -406,8 +389,9 @@ int train()
     Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
     printf("loaded dataset with %d images\n", dataset.size);
 
-    Network network = make_network(dataset.rows * dataset.cols, 256, 10);
-    for (int i = 0; i < 10; i++)
+    int dims[] = {dataset.rows * dataset.cols, 128, 64, 10};
+    Network network = network_create(4, dims);
+    for (int i = 0; i < 20; i++)
     {
         printf("Epoch: %d\n", i);
         epoch(network, dataset, 100);
@@ -416,11 +400,8 @@ int train()
     int predicted_correctly = 0;
     for (int i = 0; i < dataset.size; i++)
     {
-
-        // print_image(dataset.images[i]);
-        double output[10];
-        feed_forward(network, dataset.images[i].data, output);
-        predicted_correctly += arg_max(output) == arg_max(dataset.images[i].label);
+        forward(network, dataset.images[i].data);
+        predicted_correctly += arg_max(network.neurons[network.ndim - 1]) == arg_max(dataset.images[i].label);
     }
     printf("predicted: %d, accurarcy: %f\n", predicted_correctly, ((double)predicted_correctly) / dataset.size);
 
