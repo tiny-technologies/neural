@@ -19,6 +19,12 @@
             ninja
           ];
         };
+        devShells.scripts = pkgs.mkShell {
+          packages = with pkgs; [
+            bashInteractive
+            (python310.withPackages (p: with p; [ black isort ipython numpy pytorch ]))
+          ];
+        };
         packages.default = pkgs.stdenv.mkDerivation {
           name = "neural";
           src = ./.;

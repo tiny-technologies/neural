@@ -41,6 +41,10 @@ test *args:
 	@just build debugoptimized
 	@build/debugoptimized/neural test {{args}}
 
+# Generate backprop test using PyTorch as reference
+generate-backprop-test:
+	@nix develop .#scripts -c python scripts/generate_test.py > src/test_backprop.c
+
 # Delete all build artifacts
 clean:
 	rm -rf build

@@ -1,4 +1,3 @@
-#include "lib.c"
 #include "test.c"
 
 void print_usage_main()

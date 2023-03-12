@@ -182,22 +182,22 @@ double back_propagation(Network network, double *input, double *label, double *n
         // wT * delta
         for (int j = 0; j < network.s2; j++)
         {
-            nabla_bs[0][i] += network.w2[j * network.s2 + i] * nabla_bs[1][j];
+            nabla_bs[0][i] += network.w2[j * network.s1 + i] * nabla_bs[1][j];
         }
-        nabla_bs[0][i] *= 2 * a1[i] * (1 - a1[i]);
+        nabla_bs[0][i] *= a1[i] * (1 - a1[i]);
 
         for (int j = 0; j < network.s0; j++)
         {
-            nabla_ws[0][i * network.s0 + j] = input[j] * nabla_bs[1][i];
+            nabla_ws[0][i * network.s0 + j] = input[j] * nabla_bs[0][i];
         }
     }
 
     double loss = 0;
     for (int i = 0; i < network.s2; i++)
     {
-        loss += a2[i] - label[i];
+        double tmp = a2[i] - label[i];
+        loss += tmp * tmp;
     }
-    loss *= loss;
 
     free(a1);
     free(a2);
@@ -235,7 +235,7 @@ double update_mini_batch(Network network, Image *images, int batch_size)
         add(network.s2, nabla_b[1], nabla_bs[1], nabla_b[1]);
     }
 
-    double learning_rate = 0.01;
+    double learning_rate = 0.005;
     double factor = learning_rate / batch_size;
     scale(network.s0 * network.s1, factor, nabla_w[0], nabla_w[0]);
     scale(network.s1 * network.s2, factor, nabla_w[1], nabla_w[1]);
@@ -406,7 +406,7 @@ int train()
     Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
     printf("loaded dataset with %d images\n", dataset.size);
 
-    Network network = make_network(dataset.rows * dataset.cols, 64, 10);
+    Network network = make_network(dataset.rows * dataset.cols, 256, 10);
     for (int i = 0; i < 10; i++)
     {
         printf("Epoch: %d\n", i);
@@ -422,7 +422,7 @@ int train()
         feed_forward(network, dataset.images[i].data, output);
         predicted_correctly += arg_max(output) == arg_max(dataset.images[i].label);
     }
-    printf("predicted: %d, accurarcy: %f", predicted_correctly, ((double)predicted_correctly) / dataset.size);
+    printf("predicted: %d, accurarcy: %f\n", predicted_correctly, ((double)predicted_correctly) / dataset.size);
 
     return 0;
 }
