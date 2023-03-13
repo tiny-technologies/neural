@@ -82,6 +82,20 @@ double *random_array(int size)
     return array;
 }
 
+int read_network_order(FILE *file)
+{
+    int num;
+    if (fread(&num, 4, 1, file) != 1)
+    {
+        printf("error: failed to read file\n");
+        exit(1);
+    };
+    return ((num >> 24) & 0xff) |
+           ((num << 8) & 0xff0000) |
+           ((num >> 8) & 0xff00) |
+           ((num << 24) & 0xff000000);
+}
+
 // NETWORK
 typedef struct Network
 {
