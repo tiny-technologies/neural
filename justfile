@@ -43,7 +43,7 @@ test *args:
 
 # Generate backprop test using PyTorch as reference
 generate-backprop-test:
-	@nix develop .#scripts -c python scripts/generate_test.py > src/test_backprop.c
+	@nix develop .#scripts -c python scripts/generate_test.py
 
 # Delete all build artifacts
 clean:
