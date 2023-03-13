@@ -42,7 +42,6 @@ void print_array(int size, double *data)
 }
 
 // NETWORK
-
 typedef struct Network
 {
     double **neurons;

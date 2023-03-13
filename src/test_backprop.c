@@ -93,4 +93,6 @@ void test_back_propagation()
     // free inputs and labels
     free(inputs);
     free(label);
+    // destroy network
+    network_destroy(network);
 }
