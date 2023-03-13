@@ -7,13 +7,6 @@
 
 #include "lib.c"
 
-// CONSTANTS
-
-const char *RESET = "\x1b[0m";
-const char *BOLD = "\x1b[1m";
-const char *RED = "\x1b[1;31m";
-const char *GREEN = "\x1b[1;32m";
-
 int n_passed = 0;
 int n_failed = 0;
 
@@ -100,10 +93,27 @@ double timestamp()
     return start.tv_sec + start.tv_nsec / 1000000000;
 }
 
-int test(char *names[], int n)
+// USAGE
+
+void print_usage()
 {
-    test_names = names;
-    n_tests = n;
+    printf("Usage:\n\n");
+    printf("    %sneural test [<names>]%s\n\n", BOLD, RESET);
+    printf("Run specified tests, otherwise run all.\n\n");
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc > 1 && strcmp(argv[1], "--help") == 0)
+    {
+        print_usage();
+        return 0;
+    }
+
+    srand(0);
+
+    test_names = argv + 1;
+    n_tests = argc - 1;
 
     double start = timestamp();
 

@@ -20,7 +20,57 @@ typedef struct
     int cols;
 } Dataset;
 
-// UTILS
+// PRINT UTILS
+
+const char *RESET = "\x1b[0m";
+const char *BOLD = "\x1b[1m";
+const char *RED = "\x1b[1;31m";
+const char *GREEN = "\x1b[1;32m";
+
+void print_array(int size, double *data)
+{
+    for (int i = 0; i < size; i++)
+    {
+        printf("%.2f ", data[i]);
+    }
+    printf("\n");
+}
+
+void print_image(Image image)
+{
+
+    printf("LABEL:");
+    for (int i = 0; i < 10; i++)
+    {
+        printf(" %.0f", image.label[i]);
+    }
+    printf("\n");
+    for (int j = 0; j < 28; j++)
+    {
+        for (int k = 0; k < 28; k++)
+        {
+            printf("%3d,", (int)(image.data[j * 28 + k] * 255));
+        }
+        printf("\n");
+    }
+}
+
+// FUNCTIONAL UTILS
+
+int arg_max(double *prediction)
+{
+    double max = 0.0;
+    int index = 0;
+    for (int i = 0; i < 10; i++)
+    {
+        if (prediction[i] > max)
+        {
+            index = i;
+            max = prediction[i];
+        };
+    }
+    return index;
+}
 
 double *random_array(int size)
 {
@@ -32,13 +82,18 @@ double *random_array(int size)
     return array;
 }
 
-void print_array(int size, double *data)
+int read_network_order(FILE *file)
 {
-    for (int i = 0; i < size; i++)
+    int num;
+    if (fread(&num, 4, 1, file) != 1)
     {
-        printf("%.2f ", data[i]);
-    }
-    printf("\n");
+        printf("error: failed to read file\n");
+        exit(1);
+    };
+    return ((num >> 24) & 0xff) |
+           ((num << 8) & 0xff0000) |
+           ((num >> 8) & 0xff00) |
+           ((num << 24) & 0xff000000);
 }
 
 // NETWORK
@@ -97,7 +152,7 @@ void network_destroy(Network network)
     free(network.dims);
 }
 
-// ML STUFF
+// MACHINE LEARNING
 
 double compute_loss(Network network, double *label)
 {
@@ -256,24 +311,6 @@ void epoch(Network network, Dataset dataset, int batch_size)
 
 // IO
 
-void load_images(char *path)
-{
-}
-
-int read_network_order(FILE *file)
-{
-    int num;
-    if (fread(&num, 4, 1, file) != 1)
-    {
-        printf("error: failed to read file\n");
-        exit(1);
-    };
-    return ((num >> 24) & 0xff) |
-           ((num << 8) & 0xff0000) |
-           ((num >> 8) & 0xff00) |
-           ((num << 24) & 0xff000000);
-}
-
 Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
 {
     Dataset dataset;
@@ -338,78 +375,10 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
     return dataset;
 }
 
-void print_image(Image image)
-{
-
-    printf("LABEL:");
-    for (int i = 0; i < 10; i++)
-    {
-        printf(" %.0f", image.label[i]);
-    }
-    printf("\n");
-    for (int j = 0; j < 28; j++)
-    {
-        for (int k = 0; k < 28; k++)
-        {
-            printf("%3d,", (int)(image.data[j * 28 + k] * 255));
-        }
-        printf("\n");
-    }
-}
-
 void store_network()
 {
 }
 
 void load_network()
 {
-}
-
-int arg_max(double *prediction)
-{
-    double max = 0.0;
-    int index = 0;
-    for (int i = 0; i < 10; i++)
-    {
-        if (prediction[i] > max)
-        {
-            index = i;
-            max = prediction[i];
-        };
-    }
-    return index;
-}
-
-// CLI
-
-int train()
-{
-    Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
-    printf("loaded dataset with %d images\n", dataset.size);
-
-    int dims[] = {dataset.rows * dataset.cols, 128, 64, 10};
-    Network network = network_create(4, dims);
-    for (int i = 0; i < 20; i++)
-    {
-        printf("Epoch: %d\n", i);
-        epoch(network, dataset, 100);
-    }
-
-    int predicted_correctly = 0;
-    for (int i = 0; i < dataset.size; i++)
-    {
-        forward(network, dataset.images[i].data);
-        predicted_correctly += arg_max(network.neurons[network.ndim - 1]) == arg_max(dataset.images[i].label);
-    }
-    printf("predicted: %d, accurarcy: %f\n", predicted_correctly, ((double)predicted_correctly) / dataset.size);
-
-    network_destroy(network);
-
-    return 0;
-}
-
-int run()
-{
-    printf("not implemented yet\n");
-    return 0;
 }

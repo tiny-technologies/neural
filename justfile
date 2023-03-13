@@ -39,7 +39,7 @@ release *args:
 [no-exit-message]
 test *args:
 	@just build debugoptimized
-	@build/debugoptimized/neural test {{args}}
+	@build/debugoptimized/neural-test {{args}}
 
 # Generate backprop test using PyTorch as reference
 generate-backprop-test:
