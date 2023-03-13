@@ -9,26 +9,24 @@ import torch
 
 torch.manual_seed(0)
 
-s0, s1, s2 = 2, 3, 4
+dims = [2, 3, 4]
 
-inputs = torch.rand(s0)
-label = torch.rand(s2)
+inputs = torch.rand(dims[0])
+label = torch.rand(dims[-1])
 
-w1 = torch.rand((s1, s0), requires_grad=True)
-w2 = torch.rand((s2, s1), requires_grad=True)
-b1 = torch.rand(s1, requires_grad=True)
-b2 = torch.rand(s2, requires_grad=True)
+weights = [torch.rand((o, i), requires_grad=True) for (i, o) in zip(dims, dims[1:])]
+biases = [torch.rand(dim, requires_grad=True) for dim in dims[1:]]
 
-outputs = torch.sigmoid(w2 @ torch.sigmoid(w1 @ inputs + b1) + b2)
+outputs = inputs
+for (w, b) in zip(weights, biases):
+    outputs = torch.sigmoid(w @ outputs + b)
+
 loss = (outputs - label).square().sum()
-
 loss.backward()
 
 # CODE GENERATION
 
-make_network = (
-    f"int ndims[] = {{{s0}, {s1}, {s2}}};\nNetwork network = network_create(3, ndims);"
-)
+make_network = ()
 
 square_brackets = lambda indices, shape: " + ".join(
     f"{idx} * {math.prod(shape[dim + 1:])}" for (dim, idx) in enumerate(indices)
@@ -43,24 +41,22 @@ alloc_array = (
     lambda name, tensor: f"double *{name} = malloc({tensor.numel()} * sizeof(double));"
 )
 
-gradients = [
-    ("nabla_w1", w1.grad),
-    ("nabla_b1", b1.grad),
-    ("nabla_w2", w2.grad),
-    ("nabla_b2", b2.grad),
-]
+weights_grad = [(f"nabla_w{i}", w.grad) for (i, w) in enumerate(weights, 1)]
+biases_grad = [(f"nabla_b{i}", b.grad) for (i, b) in enumerate(biases, 1)]
+
+gradients = weights_grad + biases_grad
 
 code = [
-    make_network,
+    "// create network",
+    f"int dims[] = {{{', '.join(map(str,dims))}}};",
+    f"Network network = network_create({len(dims)}, dims);",
     "",
     "// fill network",
     *(
         fill_array(f"network.{name}", tensor)
         for (name, tensor) in [
-            ("weights[1]", w1),
-            ("weights[2]", w2),
-            ("biases[1]", b1),
-            ("biases[2]", b2),
+            *((f"weights[{i}]", w) for (i, w) in enumerate(weights, 1)),
+            *((f"biases[{i}]", b) for (i, b) in enumerate(biases, 1)),
         ]
     ),
     "",
