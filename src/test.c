@@ -93,12 +93,6 @@ void run_test(char *name, void test())
     printf("\n");
 }
 
-void print_usage_test()
-{
-    printf("usage: neural test [<names>]\n\n");
-    printf("Run specified test otherwise run all.\n\n");
-}
-
 double timestamp()
 {
     struct timespec start;

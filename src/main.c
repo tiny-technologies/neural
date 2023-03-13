@@ -11,6 +11,13 @@ void print_usage_main()
     printf("\n");
 }
 
+void print_usage_test()
+{
+    printf("Usage:\n\n");
+    printf("    %sneural test [<names>]%s\n\n", BOLD, RESET);
+    printf("Run specified tests, otherwise run all.\n\n");
+}
+
 int main(int argc, char *argv[])
 {
     srand(0);
@@ -31,6 +38,11 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(argv[1], "test") == 0)
     {
+        if (argc == 3 && strcmp(argv[2], "--help") == 0)
+        {
+            print_usage_test();
+            return 0;
+        }
         return test(argv + 2, argc - 2);
     }
     else

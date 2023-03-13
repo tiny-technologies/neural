@@ -6,13 +6,13 @@
 
 // TYPES
 
-typedef struct Image
+typedef struct
 {
     double *label;
     double *data;
 } Image;
 
-typedef struct Dataset
+typedef struct
 {
     Image *images;
     int size;
@@ -288,7 +288,6 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
 
         fseek(file, 4, SEEK_SET); // skip magic number
         dataset.size = read_network_order(file);
-
         dataset.images = malloc(sizeof(Image) * dataset.size);
 
         uint8_t number;
