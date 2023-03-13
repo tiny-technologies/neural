@@ -5,10 +5,16 @@ math_dep = cc.find_library('m')
 
 omp_dep = dependency('openmp')
 
-exe = executable(
+executable(
     'neural',
     'src/main.c',
     dependencies: [math_dep],
     install : true,
 )
-test('unit tests', exe, args : ['test'])
+
+executable(
+    'neural-test',
+    'src/test.c',
+    dependencies: [math_dep],
+    install : true,
+)

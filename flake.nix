@@ -38,7 +38,7 @@
         checks.default = pkgs.runCommand "check"
           { buildInputs = [ self.packages.${system}.default ]; }
           ''
-            neural test
+            neural-test
             echo ✅ all tests passed > $out
           '';
       }
