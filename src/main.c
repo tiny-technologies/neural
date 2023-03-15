@@ -30,7 +30,7 @@ int train(int batch_size, int ndims, int *dims_hl, int epochs, double learning_r
     }
     printf("predicted: %d, accurarcy: %f\n", predicted_correctly, ((double)predicted_correctly) / dataset.size);
 
-    // network_destroy(network);
+    network_destroy(network);
 
     return 0;
 }
@@ -81,13 +81,13 @@ int main(int argc, char *argv[])
     {
         // default values
         int batch_size = 200;
-        int dims_hl[8] = {0};
+        int dims_hl[8] = {16};
         int epochs = 10;
         double learning_rate = 0.001;
 
         // Parse optional flags
         char c;
-        int j = 0;
+        int j = 4;
         for (int i = 2; i < argc; i++)
         {
 
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
                 }
 
                 char *token = strtok(argv[++i], ",");
-                while (token != NULL && ++j < 9)
+                for (j = 1; j < 9 && token != NULL; j++)
                 {
                     if (sscanf(token, "%d%c", &dims_hl[j], &c) != 1)
                     {
@@ -126,6 +126,13 @@ int main(int argc, char *argv[])
                     }
                     token = strtok(NULL, ",");
                 }
+
+                if (token != NULL)
+                {
+                    printf("%serror:%s not more than 8 hidden layers allowed", RED, RESET);
+                    exit(1);
+                }
+
                 ++j; // output layer
             }
 
