@@ -2,7 +2,7 @@
 
 // SUBCOMMANDS
 
-int train(int batch_size, int ndim, int *dims_hl, int epochs, double learning_rate)
+int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learning_rate)
 {
     Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
     printf("loaded dataset with %d images\n", dataset.size);
@@ -11,7 +11,7 @@ int train(int batch_size, int ndim, int *dims_hl, int epochs, double learning_ra
     dims[0] = dataset.rows * dataset.cols;
     for (int i = 1; i < ndim - 1; i++)
     {
-        dims[i] = dims_hl[i];
+        dims[i] = dims_hidden[i];
     }
     dims[ndim - 1] = 10;
 
