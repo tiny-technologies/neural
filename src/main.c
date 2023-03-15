@@ -11,7 +11,7 @@ int train(int batch_size, int ndims, int *dims_hl, int epochs, double learning_r
     dims[0] = dataset.rows * dataset.cols;
     for (int i = 1; i < ndims - 1; i++)
     {
-        dims[i] = dims_hl[i - 1];
+        dims[i] = dims_hl[i];
     }
     dims[ndims - 1] = 10;
 
