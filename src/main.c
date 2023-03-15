@@ -2,20 +2,25 @@
 
 // SUBCOMMANDS
 
-int train(int batch_size, int ndims, int *dims_hl, int epochs, double learning_rate)
+int train(int batch_size, int ndim, int *dims_hl, int epochs, double learning_rate)
 {
     Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
     printf("loaded dataset with %d images\n", dataset.size);
 
-    int dims[ndims];
+    int dims[ndim];
     dims[0] = dataset.rows * dataset.cols;
-    for (int i = 1; i < ndims - 1; i++)
+    for (int i = 1; i < ndim - 1; i++)
     {
         dims[i] = dims_hl[i];
     }
-    dims[ndims - 1] = 10;
+    dims[ndim - 1] = 10;
 
-    Network network = network_create(ndims, dims);
+    printf("initialized network with layers:");
+    for (int i = 0; i < ndim; i++)
+        printf(" %d", dims[i]);
+    printf("\n");
+
+    Network network = network_create(ndim, dims);
     for (int i = 0; i < epochs; i++)
     {
         printf("Epoch: %d\n", i);
@@ -81,13 +86,13 @@ int main(int argc, char *argv[])
     {
         // default values
         int batch_size = 200;
-        int dims_hl[8] = {16};
+        int dims_hidden[8] = {16};
+        int ndim = 4;
         int epochs = 10;
         double learning_rate = 0.001;
 
         // Parse optional flags
         char c;
-        int j = 4;
         for (int i = 2; i < argc; i++)
         {
 
@@ -117,9 +122,9 @@ int main(int argc, char *argv[])
                 }
 
                 char *token = strtok(argv[++i], ",");
-                for (j = 1; j < 9 && token != NULL; j++)
+                for (ndim = 1; ndim < 9 && token != NULL; ndim++)
                 {
-                    if (sscanf(token, "%d%c", &dims_hl[j], &c) != 1)
+                    if (sscanf(token, "%d%c", &dims_hidden[ndim], &c) != 1)
                     {
                         printf("%serror:%s invalid dimensions '%s'\n", RED, RESET, token);
                         exit(1);
@@ -133,7 +138,7 @@ int main(int argc, char *argv[])
                     exit(1);
                 }
 
-                ++j; // output layer
+                ++ndim; // output layer
             }
 
             else if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--epochs") == 0)
@@ -174,7 +179,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        return train(batch_size, j, dims_hl, epochs, learning_rate);
+        return train(batch_size, ndim, dims_hidden, epochs, learning_rate);
     }
 
     else
