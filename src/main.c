@@ -9,11 +9,11 @@ int train(int batch_size, int ndims, int *dims_hl, int epochs, double learning_r
 
     int dims[ndims];
     dims[0] = dataset.rows * dataset.cols;
-    for (int i = 1; i < ndims; i++)
+    for (int i = 1; i < ndims - 1; i++)
     {
-        dims[i] = dims_hl[i];
+        dims[i] = dims_hl[i - 1];
     }
-    dims[ndims] = 10;
+    dims[ndims - 1] = 10;
 
     Network network = network_create(ndims, dims);
     for (int i = 0; i < epochs; i++)
