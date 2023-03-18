@@ -11,7 +11,7 @@ int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learnin
     dims[0] = dataset.rows * dataset.cols;
     for (int i = 1; i < ndim - 1; i++)
     {
-        dims[i] = dims_hidden[i];
+        dims[i] = dims_hidden[i - 1];
     }
     dims[ndim - 1] = 10;
 
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     {
         // default values
         int batch_size = 200;
-        int dims_hidden[8] = {16};
+        int dims_hidden[8] = {16, 16};
         int ndim = 4;
         int epochs = 10;
         double learning_rate = 0.001;
