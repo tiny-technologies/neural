@@ -9,7 +9,7 @@ import torch
 
 torch.manual_seed(0)
 
-dims = [2, 3, 4]
+dims = [2, 3, 4, 5, 6, 7]
 
 inputs = torch.rand(dims[0])
 label = torch.rand(dims[-1])
