@@ -1,106 +1,98 @@
 import math
 from itertools import product
+from pathlib import Path
+
 import torch
+
+
+# RUN BACKPROPAGATION
 
 torch.manual_seed(0)
 
-s0, s1, s2 = 2, 3, 4
+dims = [2, 3, 4, 3, 2]
 
-inputs = torch.rand(s0)
-label = torch.rand(s2)
+inputs = torch.rand(dims[0])
+label = torch.rand(dims[-1])
 
-w1 = torch.rand((s1, s0), requires_grad=True)
-w2 = torch.rand((s2, s1), requires_grad=True)
-b1 = torch.rand(s1, requires_grad=True)
-b2 = torch.rand(s2, requires_grad=True)
+weights = [torch.rand((o, i), requires_grad=True) for (i, o) in zip(dims, dims[1:])]
+biases = [torch.rand(dim, requires_grad=True) for dim in dims[1:]]
 
-outputs = torch.sigmoid(w2 @ torch.sigmoid(w1 @ inputs + b1) + b2)
+outputs = inputs
+for (w, b) in zip(weights, biases):
+    outputs = torch.sigmoid(w @ outputs + b)
+
 loss = (outputs - label).square().sum()
-
 loss.backward()
 
-# print("grads")
-# print(f"{w1.grad=}")
-# print(f"{b1.grad=}")
-# print(f"{w2.grad=}")
-# print(f"{b2.grad=}")
+# CODE GENERATION
 
-make_network = f"Network network = make_network({s0}, {s1}, {s2});"
-
-square_brackets = lambda indices, shape: " + ".join(
-    f"{idx} * {math.prod(shape[dim + 1:])}" for (dim, idx) in enumerate(indices)
-)
-
+make_network = ()
 fill_array = lambda name, tensor: "\n".join(
-    f"{name}[{square_brackets(indices, tensor.shape)}] = {tensor[indices]};"
-    for indices in product(*map(range, tensor.shape))
+    f"{name}[{i}] = {tensor[indices]};"
+    for (i, indices) in enumerate(product(*map(range, tensor.shape)))
 )
 
 alloc_array = (
     lambda name, tensor: f"double *{name} = malloc({tensor.numel()} * sizeof(double));"
 )
 
-gradients = [
-    ("nabla_w1", w1.grad),
-    ("nabla_b1", b1.grad),
-    ("nabla_w2", w2.grad),
-    ("nabla_b2", b2.grad),
+weights_gradients = [(f"nabla_w{i}", w.grad) for (i, w) in enumerate(weights, 1)]
+biases_gradients = [(f"nabla_b{i}", b.grad) for (i, b) in enumerate(biases, 1)]
+gradients = weights_gradients + biases_gradients
+
+body = [
+    "// create network",
+    f"int dims[] = {{{', '.join(map(str,dims))}}};",
+    f"Network network = network_create({len(dims)}, dims);",
+    "",
+    "// fill network",
+    *(
+        fill_array(f"network.{name}", tensor)
+        for (name, tensor) in [
+            *((f"weights[{i}]", w) for (i, w) in enumerate(weights, 1)),
+            *((f"biases[{i}]", b) for (i, b) in enumerate(biases, 1)),
+        ]
+    ),
+    "",
+    "// fill gradients",
+    *(
+        alloc_array(name, tensor) + "\n" + fill_array(name, tensor)
+        for (name, tensor) in gradients
+    ),
+    "",
+    "// fill inputs and label",
+    *(
+        alloc_array(name, tensor) + "\n" + fill_array(name, tensor)
+        for (name, tensor) in [("inputs", inputs), ("label", label)]
+    ),
+    "",
+    "// run backprop",
+    "forward(network, inputs);",
+    "double loss = compute_loss(network, label);",
+    "backward(network, label);",
+    "// compare loss",
+    f'assert_scalar("loss", {float(loss)}, loss);',
+    "",
+    "// compare gradients",
+    *(
+        f'assert_array("{name}", {tensor.numel()}, {name}, network.{dict(w="weights", b="biases")[name[-2]]}_grad[{int(name[-1])}]);'
+        for (name, tensor) in gradients
+    ),
+    "",
+    "// free gradients",
+    *(f"free({name});" for (name, _) in gradients),
+    "// free inputs and labels",
+    *(f"free({name});" for name in ["inputs", "label"]),
+    "// destroy network",
+    "network_destroy(network);",
 ]
 
-back_prop = """\
-double *nabla_w[] = {
-    malloc(network.s0 * network.s1 * sizeof(double)),
-    malloc(network.s1 * network.s2 * sizeof(double)),
-};
-double *nabla_b[] = {
-    malloc(network.s1 * sizeof(double)),
-    malloc(network.s2 * sizeof(double)),
-};
-double loss = back_propagation(network, inputs, label, nabla_w, nabla_b);
-"""
 
-code = "\n".join(
-    [
-        make_network,
-        "\n// fill network",
-        *(
-            fill_array(f"network.{name}", tensor)
-            for (name, tensor) in [("w1", w1), ("w2", w2), ("b1", b1), ("b2", b2)]
-        ),
-        "\n// fill gradients",
-        *(
-            alloc_array(name, tensor) + "\n" + fill_array(name, tensor)
-            for (name, tensor) in gradients
-        ),
-        "\n// fill inputs and label",
-        *(
-            alloc_array(name, tensor) + "\n" + fill_array(name, tensor)
-            for (name, tensor) in [("inputs", inputs), ("label", label)]
-        ),
-        "\n// run backprop",
-        back_prop,
-        "// compare loss",
-        f'assert_scalar("loss", {float(loss)}, loss);',
-        "\n// compare gradients",
-        *(
-            f'assert_array("{name}", {tensor.numel()}, {name}, {name[:-1]}[{int(name[-1]) - 1}]);'
-            for (name, tensor) in gradients
-        ),
-        "\n// free gradients",
-        *(f"free({name});" for (name, _) in gradients),
-        *(
-            f"free({name}[{i}]);"
-            for (name, i) in product(["nabla_w", "nabla_b"], range(2))
-        ),
-        "// free inputs and labels",
-        *(f"free({name});" for name in ["inputs", "label"]),
-    ]
-)
+test = [
+    f"/* automatically generated by '{Path(__file__).name}' */",
+    "void test_back_propagation()\n{",
+    "\n".join(("    " + line).rstrip() for line in "\n".join(body).split("\n")),
+    "}\n",
+]
 
-indent = lambda text: "    " + text.replace("\n", "\n    ")
-remove_trailing_whitespace = lambda text: "\n".join(map(str.rstrip, text.split("\n")))
-
-print("/* automatically generated by 'generate_test.py' */")
-print("void test_back_propagation()\n{")
-print(remove_trailing_whitespace(indent(code)))
-print("}")
+(Path(__file__).parent.parent / "src" / "test_backprop.c").write_text("\n".join(test))
