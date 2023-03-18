@@ -62,8 +62,8 @@ void test_serialization()
     // todo: open this in memory
     FILE *file = fopen("test.model", "wb+");
 
-    int ndim = 4;
-    int dims[] = {2, 3, 4, 5};
+    int ndim = 5;
+    int dims[] = {2, 3, 4, 3, 2};
     Network network = network_create(ndim, dims);
 
     // serialize
