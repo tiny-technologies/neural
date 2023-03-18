@@ -209,7 +209,7 @@ void backward(Network network, double *label)
         }
     }
 
-    for (int l = ndim - 2; l == 1; l--)
+    for (int l = ndim - 2; l > 0; l--)
     {
         for (int i = 0; i < dims[l]; i++)
         {
