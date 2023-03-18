@@ -61,7 +61,7 @@ int run(char *model_path)
     printf("\n");
 
     // todo: pass file image from command line instead
-    Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
+    Dataset dataset = load_mnist_dataset("mnist/t10k-labels-idx1-ubyte", "mnist/t10k-images-idx3-ubyte");
     printf("loaded dataset with %d images\n", dataset.size);
 
     int predicted_correctly = 0;
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        return run(argc == 2 ? argv[2] : "default.model");
+        return run(argc == 2 ? "default.model" : argv[2]);
     }
 
     else if (strcmp(argv[1], "train") == 0)
@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
                     exit(1);
                 }
 
-                model_path = argv[i + 1];
+                model_path = argv[++i];
             }
 
             else
