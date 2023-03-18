@@ -24,7 +24,7 @@ int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learnin
     for (int i = 0; i < epochs; i++)
     {
         printf("Epoch: %d\n", i);
-        epoch(network, dataset, batch_size);
+        epoch(network, dataset, batch_size, learning_rate);
     }
 
     int predicted_correctly = 0;
