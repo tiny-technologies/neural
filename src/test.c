@@ -68,7 +68,7 @@ void test_serialization()
 
     // serialize
     serialize_network(network, file);
-    int expected_size = 1 + network.ndim + 4 * network.ndim;
+    int expected_size = 4 + 4 * network.ndim;
     for (int l = 1; l < network.ndim; l++)
     {
         expected_size += 8 * network.dims[l] * (1 + network.dims[l - 1]);

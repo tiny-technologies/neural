@@ -86,7 +86,7 @@ int print_usage_main()
     printf("    %sneural <command> [<args>]%s\n\n", BOLD, RESET);
     printf("Commands:\n\n");
     printf("    %srun%s    Run inference using a trained network\n", BOLD, RESET);
-    printf("      %s[<path>]%s                    path to model (default: default.model)\n", BOLD, RESET);
+    printf("      %s<path>%s                    path to model (default: default.model)\n", BOLD, RESET);
     printf("\n");
     printf("    %strain%s  Train a new network and store it to disk\n", BOLD, RESET);
     printf("      %s-b, --batch-size <INT>%s      samples per batch (default: 200)\n", BOLD, RESET);
