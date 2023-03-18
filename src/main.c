@@ -40,6 +40,54 @@ int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learnin
     return 0;
 }
 
+int bench()
+{
+    Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
+    printf("loaded dataset with %d images\n", dataset.size);
+
+    int ndim = 5;
+    int dims[] = {
+        dataset.rows * dataset.cols,
+        1024,
+        1024,
+        1024,
+        10,
+    };
+    Network network = network_create(ndim, dims);
+    printf("created network of size %d", dims[0]);
+    for (int i = 1; i < ndim; i++)
+    {
+        printf("x%d", dims[i]);
+    }
+    printf("\n");
+
+    int n_passes = 100;
+
+    {
+        printf("%sForward Pass%s \U0001f51c\n", BOLD, RESET);
+        double start = timestamp();
+        for (int i = 0; i < n_passes; i++)
+        {
+            forward(network, dataset.images[i].data);
+        }
+        double end = timestamp();
+        printf("took: %.3f seconds (%d passes)\n", end - start, n_passes);
+    }
+
+    {
+        printf("%sBackward Pass%s \U0001f519\n", BOLD, RESET);
+        double start = timestamp();
+        for (int i = 0; i < n_passes; i++)
+        {
+            backward(network, dataset.images[i].label);
+        }
+        double end = timestamp();
+        printf("took: %.3f seconds (%d passes)\n", end - start, n_passes);
+    }
+
+    return 0;
+}
+
 int run()
 {
     printf("not implemented yet\n");
@@ -59,6 +107,7 @@ int print_usage_main()
     printf("      %s-d, --dims <INT,INT,..>%s     dimensions of hidden layers (default: 16,16)\n", BOLD, RESET);
     printf("      %s-e, --epochs <INT>%s          number of epochs (default: 10)\n", BOLD, RESET);
     printf("      %s-l, --learning-rate <REAL>%s  step size of parameter update (default: 0.001)\n\n", BOLD, RESET);
+    printf("    %sbench%s  Benchmark forward and backward pass\n\n", BOLD, RESET);
     printf("    %shelp%s   Show this message and exit\n", BOLD, RESET);
     printf("\n");
 
@@ -180,6 +229,19 @@ int main(int argc, char *argv[])
         }
 
         return train(batch_size, ndim, dims_hidden, epochs, learning_rate);
+    }
+
+    else if (strcmp(argv[1], "bench") == 0)
+    {
+        if (argc == 2)
+        {
+            return bench();
+        }
+        else
+        {
+            printf("%serror:%s unknown flag '%s'\n", RED, RESET, argv[argc - 1]);
+            exit(1);
+        }
     }
 
     else

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 
 // TYPES
 
@@ -94,6 +95,13 @@ int read_network_order(FILE *file)
            ((num << 8) & 0xff0000) |
            ((num >> 8) & 0xff00) |
            ((num << 24) & 0xff000000);
+}
+
+double timestamp()
+{
+    struct timespec start;
+    clock_gettime(CLOCK_REALTIME, &start);
+    return 0.000000001 * (1000000000 * start.tv_sec + start.tv_nsec);
 }
 
 // NETWORK
@@ -267,9 +275,7 @@ double update_mini_batch(Network network, Image *images, int batch_size)
     }
 
     // update weights and biases
-    double learning_rate = 0.1;
     double factor = learning_rate / batch_size;
-
     for (int l = 1; l < ndim; l++)
     {
         for (int i = 0; i < dims[l]; i++)
