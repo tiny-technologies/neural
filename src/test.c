@@ -22,7 +22,7 @@ void assert_array(char *name, int size, double *expected, double *actual)
     int equals = 1;
     for (int i = 0; i < size; i++)
     {
-        if (fabs(expected[i] - actual[i]) > 0.001)
+        if (fabs(expected[i] - actual[i]) > 0.000001)
         {
             equals = 0;
             break;
