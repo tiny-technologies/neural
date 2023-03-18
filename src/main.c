@@ -49,6 +49,12 @@ int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learnin
 int run(char *model_path)
 {
     FILE *file = fopen(model_path, "rb");
+    if (file == NULL)
+    {
+        printf("%serror:%s '%s' does not exists\n", RED, RESET, model_path);
+        exit(1);
+    }
+
     Network network = deserialize_network(file);
     fclose(file);
 
