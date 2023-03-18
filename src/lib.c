@@ -405,15 +405,7 @@ void serialize_network(Network network, FILE *file)
 Network deserialize_network(FILE *file)
 {
     int ndim;
-    int failures = 0;
-
-    failures += fread(&ndim, sizeof(int32_t), 1, file) != 1;
-
-    if (failures)
-    {
-        printf("fuck %d\n", ndim);
-        exit(1);
-    }
+    int failures = fread(&ndim, sizeof(int32_t), 1, file) != 1;
 
     int *dims = malloc(ndim * sizeof(int32_t));
 
