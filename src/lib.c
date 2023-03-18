@@ -228,7 +228,7 @@ void backward(Network network, double *label)
     }
 }
 
-double update_mini_batch(Network network, Image *images, int batch_size)
+double update_mini_batch(Network network, Image *images, int batch_size, double learning_rate)
 {
     int ndim = network.ndim;
     int *dims = network.dims;
@@ -267,9 +267,7 @@ double update_mini_batch(Network network, Image *images, int batch_size)
     }
 
     // update weights and biases
-    double learning_rate = 0.1;
     double factor = learning_rate / batch_size;
-
     for (int l = 1; l < ndim; l++)
     {
         for (int i = 0; i < dims[l]; i++)
@@ -295,7 +293,7 @@ double update_mini_batch(Network network, Image *images, int batch_size)
     return loss;
 }
 
-void epoch(Network network, Dataset dataset, int batch_size)
+void epoch(Network network, Dataset dataset, int batch_size, double learning_rate)
 {
     // todo implement loading thing
     // Working... ━━━━╺━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  10% 0:00:46
@@ -303,8 +301,8 @@ void epoch(Network network, Dataset dataset, int batch_size)
     printf("Start epoch with %d batches (batch_size: %d)\n", batches, batch_size);
     for (int i = 0; i < batches; i++)
     {
-        double loss = update_mini_batch(network, dataset.images, batch_size) / batch_size;
-        printf("loss: %.2f\r", loss);
+        double loss = update_mini_batch(network, dataset.images, batch_size, learning_rate) / batch_size;
+        printf("loss: %.4f\r", loss);
     }
     printf("\n");
 }
