@@ -190,22 +190,20 @@ void forward(Network network, double *inputs)
     }
 }
 
-void backward(Network network, double *label)
+void backward(Network network, double *label, double **w_grads, double **b_grads)
 {
     int ndim = network.ndim;
     int *dims = network.dims;
     double **a = network.neurons;
     double **w = network.weights;
-    double **w_grad = network.weights_grad;
-    double **b_grad = network.biases_grad;
 
     int l = ndim - 1;
     for (int i = 0; i < dims[l]; i++)
     {
-        b_grad[l][i] = 2 * (a[l][i] - label[i]) * a[l][i] * (1 - a[l][i]);
+        b_grads[l][i] = 2 * (a[l][i] - label[i]) * a[l][i] * (1 - a[l][i]);
         for (int j = 0; j < dims[l - 1]; j++)
         {
-            w_grad[l][i * dims[l - 1] + j] = a[l - 1][j] * b_grad[l][i];
+            w_grads[l][i * dims[l - 1] + j] = a[l - 1][j] * b_grads[l][i];
         }
     }
 
@@ -213,16 +211,16 @@ void backward(Network network, double *label)
     {
         for (int i = 0; i < dims[l]; i++)
         {
-            b_grad[l][i] = 0;
+            b_grads[l][i] = 0;
             for (int j = 0; j < dims[l + 1]; j++)
             {
-                b_grad[l][i] += w[l + 1][j * dims[l] + i] * b_grad[l + 1][j];
+                b_grads[l][i] += w[l + 1][j * dims[l] + i] * b_grads[l + 1][j];
             }
-            b_grad[l][i] *= a[l][i] * (1 - a[l][i]);
+            b_grads[l][i] *= a[l][i] * (1 - a[l][i]);
 
             for (int j = 0; j < network.dims[l - 1]; j++)
             {
-                w_grad[l][i * dims[l - 1] + j] = a[l - 1][j] * b_grad[l][i];
+                w_grads[l][i * dims[l - 1] + j] = a[l - 1][j] * b_grads[l][i];
             }
         }
     }
@@ -234,11 +232,17 @@ double update_mini_batch(Network network, Image *images, int batch_size)
     int *dims = network.dims;
 
     // allocate arrays to accumulate gradients
+    double **weights_grads = malloc(ndim * sizeof(double *));
+    double **biases_grads = malloc(ndim * sizeof(double *));
+
     double **weights_grad = malloc(ndim * sizeof(double *));
     double **biases_grad = malloc(ndim * sizeof(double *));
 
     for (int l = 1; l < ndim; l++)
     {
+        weights_grads[l] = calloc(sizeof(double), dims[l] * dims[l - 1]);
+        biases_grads[l] = calloc(sizeof(double), dims[l]);
+
         weights_grad[l] = calloc(sizeof(double), dims[l] * dims[l - 1]);
         biases_grad[l] = calloc(sizeof(double), dims[l]);
     }
@@ -250,17 +254,17 @@ double update_mini_batch(Network network, Image *images, int batch_size)
         forward(network, images[b].data);
         loss += compute_loss(network, images[b].label);
 
-        backward(network, images[b].label);
+        backward(network, images[b].label, weights_grads, biases_grads);
 
         for (int l = 1; l < ndim; l++)
         {
             for (int i = 0; i < dims[l]; i++)
             {
-                biases_grad[l][i] += network.biases_grad[l][i];
+                biases_grad[l][i] += biases_grads[l][i];
                 for (int j = 0; j < dims[l - 1]; j++)
                 {
                     int idx = i * dims[l - 1] + j;
-                    weights_grad[l][idx] += network.weights_grad[l][idx];
+                    weights_grad[l][idx] += weights_grads[l][idx];
                 }
             }
         }
@@ -286,9 +290,13 @@ double update_mini_batch(Network network, Image *images, int batch_size)
     // free gradient arrays
     for (int i = 1; i < network.ndim; i++)
     {
+        free(weights_grads[i]);
+        free(biases_grads[i]);
         free(weights_grad[i]);
         free(biases_grad[i]);
     }
+    free(weights_grads);
+    free(biases_grads);
     free(weights_grad);
     free(biases_grad);
 
