@@ -2,25 +2,18 @@
 
 // SUBCOMMANDS
 
-int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learning_rate)
+int train(int batch_size, int ndim, int *dims, int epochs, double learning_rate)
 {
     Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
     printf("loaded dataset with %d images\n", dataset.size);
 
-    int dims[ndim];
-    dims[0] = dataset.rows * dataset.cols;
-    for (int i = 1; i < ndim - 1; i++)
-    {
-        dims[i] = dims_hidden[i];
-    }
-    dims[ndim - 1] = 10;
-
+    Network network = network_create(ndim, dims);
     printf("initialized network with layers:");
     for (int i = 0; i < ndim; i++)
         printf(" %d", dims[i]);
     printf("\n");
 
-    Network network = network_create(ndim, dims);
+    printf("start training (batch_size: %d)\n", batch_size);
     for (int i = 0; i < epochs; i++)
     {
         printf("Epoch: %d\n", i);
@@ -86,8 +79,7 @@ int main(int argc, char *argv[])
     {
         // default values
         int batch_size = 200;
-        int dims_hidden[8] = {16};
-        int ndim = 4;
+        char *dims_str = NULL;
         int epochs = 10;
         double learning_rate = 0.001;
 
@@ -113,7 +105,6 @@ int main(int argc, char *argv[])
 
             else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--dims") == 0)
             {
-
                 // Check if dimensions are comma-separated integers
                 if (i + 1 >= argc)
                 {
@@ -121,24 +112,7 @@ int main(int argc, char *argv[])
                     exit(1);
                 }
 
-                char *token = strtok(argv[++i], ",");
-                for (ndim = 1; ndim < 9 && token != NULL; ndim++)
-                {
-                    if (sscanf(token, "%d%c", &dims_hidden[ndim], &c) != 1)
-                    {
-                        printf("%serror:%s invalid dimensions '%s'\n", RED, RESET, token);
-                        exit(1);
-                    }
-                    token = strtok(NULL, ",");
-                }
-
-                if (token != NULL)
-                {
-                    printf("%serror:%s not more than 8 hidden layers allowed", RED, RESET);
-                    exit(1);
-                }
-
-                ++ndim; // output layer
+                dims_str = argv[++i];
             }
 
             else if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--epochs") == 0)
@@ -179,7 +153,42 @@ int main(int argc, char *argv[])
             }
         }
 
-        return train(batch_size, ndim, dims_hidden, epochs, learning_rate);
+        int ndim;
+        if (dims_str == NULL)
+        {
+            ndim = 4;
+        }
+        else
+        {
+            ndim = 3;
+            for (char *x = dims_str; *x != '\0'; x++)
+            {
+                ndim += *x == ',';
+            }
+        }
+
+        printf("ndim %d\n", ndim);
+        exit(0);
+
+        int *dims = malloc(ndim * sizeof(int));
+
+        char *x = dims_str;
+        dims[0] = 784;
+        for (int l = 1; l < ndim - 1; l++)
+        {
+            if (dims_str == NULL)
+            {
+                dims[l] = 16;
+            }
+            else
+            {
+                dims[l] = atoi(x);
+                x = strchr(x, ',') + 1;
+            }
+        }
+        dims[ndim - 1] = 10;
+
+        return train(batch_size, ndim, dims, epochs, learning_rate);
     }
 
     else

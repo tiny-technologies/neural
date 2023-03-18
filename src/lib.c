@@ -300,7 +300,6 @@ void epoch(Network network, Dataset dataset, int batch_size)
     // todo implement loading thing
     // Working... ━━━━╺━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  10% 0:00:46
     int batches = dataset.size / batch_size;
-    printf("Start epoch with %d batches (batch_size: %d)\n", batches, batch_size);
     for (int i = 0; i < batches; i++)
     {
         double loss = update_mini_batch(network, dataset.images, batch_size) / batch_size;
