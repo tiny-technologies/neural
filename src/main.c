@@ -219,23 +219,24 @@ int main(int argc, char *argv[])
 
                 // Check if dimensions are comma-separated integers
                 char *token = strtok(argv[++i], ",");
-                for (ndim = 1; ndim < 9 && token != NULL; ndim++)
+                ndim = 1; // input layer
+                for (int l = 0; l < 9 && token != NULL; l++)
                 {
-                    if (sscanf(token, "%d%c", &dims_hidden[ndim], &c) != 1)
+                    if (sscanf(token, "%d%c", &dims_hidden[l], &c) != 1)
                     {
                         printf("%serror:%s invalid dimensions '%s'\n", RED, RESET, token);
                         exit(1);
                     }
                     token = strtok(NULL, ",");
+                    ndim++;
                 }
+                ndim++; // output layer
 
                 if (token != NULL)
                 {
                     printf("%serror:%s not more than 8 hidden layers allowed", RED, RESET);
                     exit(1);
                 }
-
-                ++ndim; // output layer
             }
 
             else if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--epochs") == 0)
