@@ -105,6 +105,7 @@ double timestamp()
 }
 
 // NETWORK
+
 typedef struct Network
 {
     double **neurons;
@@ -381,10 +382,58 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
     return dataset;
 }
 
-void store_network()
+// SERIALIZATION / DESERIALIZATION
+
+/*
+ * SERIALIZATION FORMAT
+ * SECTION | ndim |   dims   |          w[1]         |     b[1]    | ... |
+ * SIZE    |   4  | 4 * ndim | 8 * dims[1] * dims[0] | 8 * dims[1] | ... |
+ */
+
+void serialize_network(Network network, FILE *file)
 {
+    int ndim = network.ndim;
+    int *dims = network.dims;
+
+    fwrite(&ndim, sizeof(int32_t), 1, file);
+    for (int l = 0; l < ndim; l++)
+    {
+        fwrite(dims + l, sizeof(int32_t), 1, file);
+    }
+
+    for (int l = 1; l < ndim; l++)
+    {
+        fwrite(network.weights[l], sizeof(double), dims[l] * dims[l - 1], file);
+        fwrite(network.biases[l], sizeof(double), dims[l], file);
+    }
 }
 
-void load_network()
+// todo: make this platform independent
+Network deserialize_network(FILE *file)
 {
+    int ndim;
+    int failures = fread(&ndim, sizeof(int32_t), 1, file) != 1;
+
+    int *dims = malloc(ndim * sizeof(int32_t));
+
+    for (int l = 0; l < ndim; l++)
+    {
+        failures += fread(dims + l, sizeof(int32_t), 1, file) != 1;
+    }
+
+    Network network = network_create(ndim, dims);
+
+    for (int l = 1; l < ndim; l++)
+    {
+        failures += fread(network.weights[l], sizeof(double), dims[l] * dims[l - 1], file) != dims[l] * dims[l - 1];
+        failures += fread(network.biases[l], sizeof(double), dims[l], file) != dims[l];
+    }
+
+    if (failures)
+    {
+        printf("error: failed to load read network from file %d\n", failures);
+        exit(1);
+    }
+
+    return network;
 }
