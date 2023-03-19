@@ -27,11 +27,18 @@ int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learnin
         epoch(network, dataset, batch_size, learning_rate);
     }
 
+    double **neurons = malloc(sizeof(double *) * ndim);
+    for (int l = 0; l < ndim; l++)
+    {
+        neurons[l] = calloc(sizeof(double), dims[l]);
+    }
+
     int predicted_correctly = 0;
     for (int i = 0; i < dataset.size; i++)
     {
-        forward(network, dataset.images[i].data);
-        predicted_correctly += arg_max(network.neurons[network.ndim - 1]) == arg_max(dataset.images[i].label);
+        neurons[0] = dataset.images[i].data;
+        forward(network, neurons);
+        predicted_correctly += arg_max(neurons[ndim - 1]) == arg_max(dataset.images[i].label);
     }
     printf("predicted: %d, accurarcy: %f\n", predicted_correctly, ((double)predicted_correctly) / dataset.size);
 
@@ -61,11 +68,27 @@ int bench()
     };
     Network network = network_create(ndim, dims);
     printf("created network of size %d", dims[0]);
+
     for (int i = 1; i < ndim; i++)
     {
         printf("x%d", dims[i]);
     }
     printf("\n");
+
+    // allocate variable arrays
+    double **neurons = malloc(ndim * sizeof(double *));
+
+    double **weights_grads = malloc(ndim * sizeof(double *));
+    double **biases_grads = malloc(ndim * sizeof(double *));
+
+    for (int l = 1; l < ndim; l++)
+    {
+        neurons[l] = calloc(sizeof(double), dims[l]);
+
+        weights_grads[l] = calloc(sizeof(double), dims[l] * dims[l - 1]);
+        biases_grads[l] = calloc(sizeof(double), dims[l]);
+    }
+    neurons[0] = dataset.images[0].data;
 
     int n_passes = 100;
 
@@ -74,7 +97,7 @@ int bench()
         double start = timestamp();
         for (int i = 0; i < n_passes; i++)
         {
-            forward(network, dataset.images[i].data);
+            forward(network, neurons);
         }
         double end = timestamp();
         printf("took: %.3f seconds (%d passes)\n", end - start, n_passes);
@@ -85,11 +108,23 @@ int bench()
         double start = timestamp();
         for (int i = 0; i < n_passes; i++)
         {
-            backward(network, dataset.images[i].label);
+            backward(network, dataset.images[i].label, neurons, weights_grads, biases_grads);
         }
         double end = timestamp();
         printf("took: %.3f seconds (%d passes)\n", end - start, n_passes);
     }
+
+    // free variable arrays
+    for (int i = 1; i < network.ndim; i++)
+    {
+        free(neurons[i]);
+        free(weights_grads[i]);
+        free(biases_grads[i]);
+    }
+
+    free(neurons);
+    free(weights_grads);
+    free(biases_grads);
 
     return 0;
 }
@@ -118,11 +153,18 @@ int run(char *model_path)
     Dataset dataset = load_mnist_dataset("mnist/t10k-labels-idx1-ubyte", "mnist/t10k-images-idx3-ubyte");
     printf("loaded dataset with %d images\n", dataset.size);
 
+    double **neurons = malloc(sizeof(double *) * network.ndim);
+    for (int l = 0; l < network.ndim; l++)
+    {
+        neurons[l] = calloc(sizeof(double), network.dims[l]);
+    }
+
     int predicted_correctly = 0;
     for (int i = 0; i < dataset.size; i++)
     {
-        forward(network, dataset.images[i].data);
-        predicted_correctly += arg_max(network.neurons[network.ndim - 1]) == arg_max(dataset.images[i].label);
+        neurons[0] = dataset.images[i].data;
+        forward(network, neurons);
+        predicted_correctly += arg_max(neurons[network.ndim - 1]) == arg_max(dataset.images[i].label);
     }
     printf("predicted: %d, accurarcy: %f\n", predicted_correctly, ((double)predicted_correctly) / dataset.size);
 

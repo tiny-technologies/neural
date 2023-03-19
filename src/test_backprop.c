@@ -5,6 +5,21 @@ void test_back_propagation()
     int dims[] = {2, 3, 4, 3, 2};
     Network network = network_create(5, dims);
 
+    // allocate variable arrays
+    double **neurons = malloc(network.ndim * sizeof(double *));
+
+    double **weights_grads = malloc(network.ndim * sizeof(double *));
+    double **biases_grads = malloc(network.ndim * sizeof(double *));
+
+    neurons[0] = calloc(sizeof(double), dims[0]);
+    for (int l = 1; l < network.ndim; l++)
+    {
+        neurons[l] = calloc(sizeof(double), dims[l]);
+
+        weights_grads[l] = calloc(sizeof(double), dims[l] * dims[l - 1]);
+        biases_grads[l] = calloc(sizeof(double), dims[l]);
+    }
+
     // fill network
     network.weights[1][0] = 0.30742281675338745;
     network.weights[1][1] = 0.6340786814689636;
@@ -114,29 +129,44 @@ void test_back_propagation()
     nabla_b4[1] = 0.06983662396669388;
 
     // fill inputs and label
-    double *inputs = malloc(2 * sizeof(double));
-    inputs[0] = 0.49625658988952637;
-    inputs[1] = 0.7682217955589294;
+    // double *inputs = malloc(2 * sizeof(double));
+    printf("reached this statement\n");
+    neurons[0][0] = 0.49625658988952637;
+    neurons[0][1] = 0.7682217955589294;
+    printf("reached this statement after neurons\n");
+
     double *label = malloc(2 * sizeof(double));
     label[0] = 0.08847743272781372;
     label[1] = 0.13203048706054688;
 
     // run backprop
-    forward(network, inputs);
-    double loss = compute_loss(network, label);
-    backward(network, label);
+
+    forward(network, neurons);
+    double loss = compute_loss(network.dims[network.ndim - 1], label, neurons[network.ndim - 1]);
+    backward(network, label, neurons, weights_grads, biases_grads);
     // compare loss
     assert_scalar("loss", 1.131441593170166, loss);
 
     // compare gradients
-    assert_array("nabla_w1", 6, nabla_w1, network.weights_grad[1]);
-    assert_array("nabla_w2", 12, nabla_w2, network.weights_grad[2]);
-    assert_array("nabla_w3", 12, nabla_w3, network.weights_grad[3]);
-    assert_array("nabla_w4", 6, nabla_w4, network.weights_grad[4]);
-    assert_array("nabla_b1", 3, nabla_b1, network.biases_grad[1]);
-    assert_array("nabla_b2", 4, nabla_b2, network.biases_grad[2]);
-    assert_array("nabla_b3", 3, nabla_b3, network.biases_grad[3]);
-    assert_array("nabla_b4", 2, nabla_b4, network.biases_grad[4]);
+    assert_array("nabla_w1", 6, nabla_w1, weights_grads[1]);
+    assert_array("nabla_w2", 12, nabla_w2, weights_grads[2]);
+    assert_array("nabla_w3", 12, nabla_w3, weights_grads[3]);
+    assert_array("nabla_w4", 6, nabla_w4, weights_grads[4]);
+    assert_array("nabla_b1", 3, nabla_b1, biases_grads[1]);
+    assert_array("nabla_b2", 4, nabla_b2, biases_grads[2]);
+    assert_array("nabla_b3", 3, nabla_b3, biases_grads[3]);
+    assert_array("nabla_b4", 2, nabla_b4, biases_grads[4]);
+
+    for (int i = 1; i < network.ndim; i++)
+    {
+        free(neurons[i]);
+        free(weights_grads[i]);
+        free(biases_grads[i]);
+    }
+
+    free(neurons);
+    free(weights_grads);
+    free(biases_grads);
 
     // free gradients
     free(nabla_w1);
@@ -147,9 +177,10 @@ void test_back_propagation()
     free(nabla_b2);
     free(nabla_b3);
     free(nabla_b4);
+
     // free inputs and labels
-    free(inputs);
     free(label);
+
     // destroy network
     network_destroy(network);
 }
