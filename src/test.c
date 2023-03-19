@@ -59,26 +59,25 @@ void assert_scalar(char *name, double expected, double actual)
 
 void test_serialization()
 {
-    // create dummy network
+    // todo: open this in memory
+    FILE *file = fopen("test.model", "wb+");
+
     int ndim = 5;
     int dims[] = {2, 3, 4, 3, 2};
     Network network = network_create(ndim, dims);
 
-    // serialize network to in-memory file
-    int size = 4 + 4 * network.ndim;
+    // serialize
+    serialize_network(network, file);
+    int expected_size = 4 + 4 * network.ndim;
     for (int l = 1; l < network.ndim; l++)
     {
-        size += 8 * network.dims[l] * (1 + network.dims[l - 1]);
+        expected_size += 8 * network.dims[l] * (1 + network.dims[l - 1]);
     }
-    uint8_t *buffer = malloc(size);
-    FILE *file = fmemopen(buffer, size, "wb+");
-    serialize_network(network, file);
 
-    // assert that file has correct size
-    assert_scalar("expected file size", size, ftell(file));
+    assert_scalar("expected file size", expected_size, ftell(file));
 
-    // try to recreate deserialized network from file
     fseek(file, 0, SEEK_SET);
+
     Network deserialized = deserialize_network(file);
     for (int l = 1; l < ndim; l++)
     {
@@ -87,7 +86,6 @@ void test_serialization()
     }
 
     fclose(file);
-    free(buffer);
 }
 
 // CLI
