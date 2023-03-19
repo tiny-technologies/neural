@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 
 // TYPES
 
@@ -96,7 +97,15 @@ int read_network_order(FILE *file)
            ((num << 24) & 0xff000000);
 }
 
+double timestamp()
+{
+    struct timespec start;
+    clock_gettime(CLOCK_REALTIME, &start);
+    return 0.000000001 * (1000000000 * start.tv_sec + start.tv_nsec);
+}
+
 // NETWORK
+
 typedef struct Network
 {
     double **neurons;
@@ -226,7 +235,7 @@ void backward(Network network, double *label, double **w_grads, double **b_grads
     }
 }
 
-double update_mini_batch(Network network, Image *images, int batch_size)
+double update_mini_batch(Network network, Image *images, int batch_size, double learning_rate)
 {
     int ndim = network.ndim;
     int *dims = network.dims;
@@ -271,9 +280,7 @@ double update_mini_batch(Network network, Image *images, int batch_size)
     }
 
     // update weights and biases
-    double learning_rate = 0.1;
     double factor = learning_rate / batch_size;
-
     for (int l = 1; l < ndim; l++)
     {
         for (int i = 0; i < dims[l]; i++)
@@ -303,7 +310,7 @@ double update_mini_batch(Network network, Image *images, int batch_size)
     return loss;
 }
 
-void epoch(Network network, Dataset dataset, int batch_size)
+void epoch(Network network, Dataset dataset, int batch_size, double learning_rate)
 {
     // todo implement loading thing
     // Working... ━━━━╺━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  10% 0:00:46
@@ -311,8 +318,8 @@ void epoch(Network network, Dataset dataset, int batch_size)
     printf("Start epoch with %d batches (batch_size: %d)\n", batches, batch_size);
     for (int i = 0; i < batches; i++)
     {
-        double loss = update_mini_batch(network, dataset.images, batch_size) / batch_size;
-        printf("loss: %.2f\r", loss);
+        double loss = update_mini_batch(network, dataset.images, batch_size, learning_rate) / batch_size;
+        printf("loss: %.4f\r", loss);
     }
     printf("\n");
 }
@@ -383,10 +390,58 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
     return dataset;
 }
 
-void store_network()
+// SERIALIZATION / DESERIALIZATION
+
+/*
+ * SERIALIZATION FORMAT
+ * SECTION | ndim |   dims   |          w[1]         |     b[1]    | ... |
+ * SIZE    |   4  | 4 * ndim | 8 * dims[1] * dims[0] | 8 * dims[1] | ... |
+ */
+
+void serialize_network(Network network, FILE *file)
 {
+    int ndim = network.ndim;
+    int *dims = network.dims;
+
+    fwrite(&ndim, sizeof(int32_t), 1, file);
+    for (int l = 0; l < ndim; l++)
+    {
+        fwrite(dims + l, sizeof(int32_t), 1, file);
+    }
+
+    for (int l = 1; l < ndim; l++)
+    {
+        fwrite(network.weights[l], sizeof(double), dims[l] * dims[l - 1], file);
+        fwrite(network.biases[l], sizeof(double), dims[l], file);
+    }
 }
 
-void load_network()
+// todo: make this platform independent
+Network deserialize_network(FILE *file)
 {
+    int ndim;
+    int failures = fread(&ndim, sizeof(int32_t), 1, file) != 1;
+
+    int *dims = malloc(ndim * sizeof(int32_t));
+
+    for (int l = 0; l < ndim; l++)
+    {
+        failures += fread(dims + l, sizeof(int32_t), 1, file) != 1;
+    }
+
+    Network network = network_create(ndim, dims);
+
+    for (int l = 1; l < ndim; l++)
+    {
+        failures += fread(network.weights[l], sizeof(double), dims[l] * dims[l - 1], file) != dims[l] * dims[l - 1];
+        failures += fread(network.biases[l], sizeof(double), dims[l], file) != dims[l];
+    }
+
+    if (failures)
+    {
+        printf("error: failed to load read network from file %d\n", failures);
+        exit(1);
+    }
+
+    return network;
 }
