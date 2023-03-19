@@ -2,7 +2,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
 #include <wchar.h>
 
 #include "lib.c"
@@ -115,13 +114,6 @@ void run_test(char *name, void test())
         printf("\U0000274c %sfailed%s\n", RED, RESET);
     }
     printf("\n");
-}
-
-double timestamp()
-{
-    struct timespec start;
-    clock_gettime(CLOCK_REALTIME, &start);
-    return start.tv_sec + start.tv_nsec / 1000000000;
 }
 
 // USAGE

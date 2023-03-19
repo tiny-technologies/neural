@@ -97,6 +97,13 @@ int read_network_order(FILE *file)
            ((num << 24) & 0xff000000);
 }
 
+double timestamp()
+{
+    struct timespec start;
+    clock_gettime(CLOCK_REALTIME, &start);
+    return 0.000000001 * (1000000000 * start.tv_sec + start.tv_nsec);
+}
+
 // NETWORK
 
 typedef struct Network
