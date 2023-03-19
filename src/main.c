@@ -11,7 +11,7 @@ int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learnin
     dims[0] = dataset.rows * dataset.cols;
     for (int i = 1; i < ndim - 1; i++)
     {
-        dims[i] = dims_hidden[i];
+        dims[i] = dims_hidden[i - 1];
     }
     dims[ndim - 1] = 10;
 
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
     {
         // default values
         int batch_size = 200;
-        int dims_hidden[8] = {16};
+        int dims_hidden[8] = {16, 16};
         int ndim = 4;
         int epochs = 10;
         double learning_rate = 0.001;
@@ -219,23 +219,24 @@ int main(int argc, char *argv[])
 
                 // Check if dimensions are comma-separated integers
                 char *token = strtok(argv[++i], ",");
-                for (ndim = 1; ndim < 9 && token != NULL; ndim++)
+                ndim = 1; // input layer
+                for (int l = 0; l < 9 && token != NULL; l++)
                 {
-                    if (sscanf(token, "%d%c", &dims_hidden[ndim], &c) != 1)
+                    if (sscanf(token, "%d%c", &dims_hidden[l], &c) != 1)
                     {
                         printf("%serror:%s invalid dimensions '%s'\n", RED, RESET, token);
                         exit(1);
                     }
                     token = strtok(NULL, ",");
+                    ndim++;
                 }
+                ndim++; // output layer
 
                 if (token != NULL)
                 {
                     printf("%serror:%s not more than 8 hidden layers allowed", RED, RESET);
                     exit(1);
                 }
-
-                ++ndim; // output layer
             }
 
             else if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--epochs") == 0)
