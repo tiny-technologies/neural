@@ -4,44 +4,61 @@
 
 int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learning_rate, char *model_path)
 {
-    Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
-    printf("loaded dataset with %d images\n", dataset.size);
+    Network network;
 
-    int dims[ndim];
-    dims[0] = dataset.rows * dataset.cols;
-    for (int i = 1; i < ndim - 1; i++)
+    // training
     {
-        dims[i] = dims_hidden[i - 1];
+        Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
+        printf("loaded dataset with %d images\n", dataset.size);
+
+        int dims[ndim];
+        dims[0] = dataset.rows * dataset.cols;
+        for (int i = 1; i < ndim - 1; i++)
+        {
+            dims[i] = dims_hidden[i - 1];
+        }
+        dims[ndim - 1] = 10;
+
+        printf("initialized network with layers:");
+        for (int i = 0; i < ndim; i++)
+            printf(" %d", dims[i]);
+        printf("\n");
+
+        network = network_create(ndim, dims);
+        for (int i = 0; i < epochs; i++)
+        {
+            printf("Epoch: %d\n", i);
+            epoch(network, dataset, batch_size, learning_rate);
+        }
+
+        destroy_dataset(dataset);
     }
-    dims[ndim - 1] = 10;
 
-    printf("initialized network with layers:");
-    for (int i = 0; i < ndim; i++)
-        printf(" %d", dims[i]);
-    printf("\n");
-
-    Network network = network_create(ndim, dims);
-    for (int i = 0; i < epochs; i++)
+    // validation
     {
-        printf("Epoch: %d\n", i);
-        epoch(network, dataset, batch_size, learning_rate);
+        Dataset dataset = load_mnist_dataset("mnist/t10k-labels-idx1-ubyte", "mnist/t10k-images-idx3-ubyte");
+        printf("loaded validation dataset with %d images\n", dataset.size);
+
+        int predicted_correctly = 0;
+        for (int i = 0; i < dataset.size; i++)
+        {
+            forward(network, dataset.images[i].data);
+            predicted_correctly += arg_max(network.neurons[network.ndim - 1]) == arg_max(dataset.images[i].label);
+        }
+        printf("predicted: %d, accurarcy: %f\n", predicted_correctly, ((double)predicted_correctly) / dataset.size);
+
+        destroy_dataset(dataset);
     }
 
-    int predicted_correctly = 0;
-    for (int i = 0; i < dataset.size; i++)
+    // persistence
     {
-        forward(network, dataset.images[i].data);
-        predicted_correctly += arg_max(network.neurons[network.ndim - 1]) == arg_max(dataset.images[i].label);
+        FILE *file = fopen(model_path, "wb");
+        serialize_network(network, file);
+        printf("saved model to: '%s'\n", model_path);
+        fclose(file);
     }
-    printf("predicted: %d, accurarcy: %f\n", predicted_correctly, ((double)predicted_correctly) / dataset.size);
-
-    FILE *file = fopen(model_path, "wb");
-    serialize_network(network, file);
-    fclose(file);
-    printf("saved model to: '%s'\n", model_path);
 
     network_destroy(network);
-    // todo: destroy dataset
 
     return 0;
 }
@@ -49,7 +66,7 @@ int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learnin
 int bench()
 {
     Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
-    printf("loaded dataset with %d images\n", dataset.size);
+    printf("loaded training dataset with %d images\n", dataset.size);
 
     int ndim = 5;
     int dims[] = {
@@ -91,6 +108,8 @@ int bench()
         printf("took: %.3f seconds (%d passes)\n", end - start, n_passes);
     }
 
+    destroy_dataset(dataset);
+
     return 0;
 }
 
@@ -127,7 +146,7 @@ int run(char *model_path)
     printf("predicted: %d, accurarcy: %f\n", predicted_correctly, ((double)predicted_correctly) / dataset.size);
 
     network_destroy(network);
-    // todo: destroy dataset
+    destroy_dataset(dataset);
 
     return 0;
 }
