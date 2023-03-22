@@ -310,7 +310,7 @@ void epoch(Network network, Dataset dataset, int batch_size, double learning_rat
     printf("Start epoch with %d batches (batch_size: %d)\n", batches, batch_size);
     for (int i = 0; i < batches; i++)
     {
-        double loss = update_mini_batch(network, dataset.images, batch_size, learning_rate) / batch_size;
+        double loss = update_mini_batch(network, dataset.images + i * batch_size, batch_size, learning_rate) / batch_size;
         printf("loss: %.4f\r", loss);
     }
     printf("\n");
