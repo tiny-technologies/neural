@@ -387,6 +387,7 @@ void destroy_dataset(Dataset dataset)
 
     for (int i = 0; i < dataset.size; i++)
     {
+        free(dataset.images[i].label);
         free(dataset.images[i].data);
     }
     free(dataset.images);
