@@ -27,6 +27,7 @@ const char *RESET = "\x1b[0m";
 const char *BOLD = "\x1b[1m";
 const char *RED = "\x1b[1;31m";
 const char *GREEN = "\x1b[1;32m";
+const char *CLEAR = "\x1b[A\33[2KT\r";
 
 void print_array(int size, double *data)
 {
@@ -54,6 +55,28 @@ void print_image(Image image)
         }
         printf("\n");
     }
+}
+
+void print_progress(double value, int progress, int max, int duration)
+{
+    int n_blocks = 32;
+    int blocks = n_blocks * progress / max;
+    int percentage = 100 * progress / max;
+
+    printf("%.4lf %s", value, GREEN);
+    for (int j = 0; j < blocks; j++)
+    {
+        printf("\U00002501");
+    }
+    printf(progress != max ? "%s\U0000257a" : "\U00002501%s", RESET);
+    for (int j = 0; j < n_blocks - blocks; j++)
+    {
+        printf("\U00002501");
+    }
+
+    int seconds = duration % 60;
+    int minutes = duration / 60;
+    printf(" %s%3d%%%s %02d:%02d\n", GREEN, percentage, RESET, minutes, seconds);
 }
 
 // FUNCTIONAL UTILS
@@ -304,16 +327,20 @@ double update_mini_batch(Network network, Image *images, int batch_size, double 
 
 void epoch(Network network, Dataset dataset, int batch_size, double learning_rate)
 {
-    // todo implement loading thing
-    // Working... ━━━━╺━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  10% 0:00:46
+    double start = timestamp();
     int batches = dataset.size / batch_size;
     printf("Start epoch with %d batches (batch_size: %d)\n", batches, batch_size);
+    double loss = 0;
     for (int i = 0; i < batches; i++)
     {
-        double loss = update_mini_batch(network, dataset.images + i * batch_size, batch_size, learning_rate) / batch_size;
-        printf("loss: %.4f\r", loss);
+        printf("%s ", CLEAR);
+        print_progress(loss / i, i, batches, (int)timestamp() - start);
+
+        loss += update_mini_batch(network, dataset.images + i * batch_size, batch_size, learning_rate) / batch_size;
     }
-    printf("\n");
+
+    printf("%s ", CLEAR);
+    print_progress(loss / batches, batches, batches, (int)timestamp() - start);
 }
 
 // IO
