@@ -299,7 +299,7 @@ double update_mini_batch(Network network, Image *images, int batch_size, double 
     free(weights_grad);
     free(biases_grad);
 
-    return loss / batch_size;
+    return loss;
 }
 
 void epoch(Network network, Dataset dataset, int batch_size, double learning_rate)
