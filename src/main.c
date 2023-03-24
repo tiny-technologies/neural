@@ -2,29 +2,11 @@
 
 // SUBCOMMANDS
 
-int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learning_rate, char *model_path)
+int train(Network network, Dataset dataset, int batch_size, int epochs, double learning_rate, char *model_path)
 {
-    Network network;
-
     // training
     {
-        Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
-        printf("loaded dataset with %d images\n", dataset.size);
-
-        int dims[ndim];
-        dims[0] = dataset.rows * dataset.cols;
-        for (int i = 1; i < ndim - 1; i++)
-        {
-            dims[i] = dims_hidden[i - 1];
-        }
-        dims[ndim - 1] = 10;
-
-        printf("initialized network with layers:");
-        for (int i = 0; i < ndim; i++)
-            printf(" %d", dims[i]);
-        printf("\n");
-
-        network = network_create(ndim, dims);
+        printf("start training with learning rate %.4lf and %d epochs\n", learning_rate, epochs);
         for (int i = 0; i < epochs; i++)
         {
             printf("Epoch: %d\n", i);
@@ -159,13 +141,14 @@ int print_usage_main()
     printf("    %sneural <command> [<args>]%s\n\n", BOLD, RESET);
     printf("Commands:\n\n");
     printf("    %srun%s    Run inference using a trained network\n", BOLD, RESET);
-    printf("      %s<path>%s                    path to model (default: default.model)\n", BOLD, RESET);
+    printf("      %s<path>%s                      path to model (default: default.model)\n", BOLD, RESET);
     printf("\n");
     printf("    %strain%s  Train a new network and store it to disk\n", BOLD, RESET);
     printf("      %s-b, --batch-size <INT>%s      samples per batch (default: 200)\n", BOLD, RESET);
     printf("      %s-d, --dims <INT,INT,..>%s     dimensions of hidden layers (default: 16,16)\n", BOLD, RESET);
     printf("      %s-e, --epochs <INT>%s          number of epochs (default: 10)\n", BOLD, RESET);
     printf("      %s-l, --learning-rate <REAL>%s  step size of parameter update (default: 0.001)\n", BOLD, RESET);
+    printf("      %s-i, --input <PATH>%s          path to model used as starting point (optional)\n", BOLD, RESET);
     printf("      %s-o, --output <PATH>%s         output path of the trained model (default: default.model)\n\n", BOLD, RESET);
     printf("    %sbench%s  Benchmark forward and backward pass\n\n", BOLD, RESET);
     printf("    %shelp%s   Show this message and exit\n", BOLD, RESET);
@@ -202,10 +185,11 @@ int main(int argc, char *argv[])
         // default values
         int batch_size = 200;
         int dims_hidden[8] = {16, 16};
-        int ndim = 4;
+        int ndim_hidden = 0;
         int epochs = 10;
         double learning_rate = 0.001;
-        char *model_path = "default.model";
+        char *output_path = "default.model";
+        char *input_path = NULL;
 
         // Parse optional flags
         char c;
@@ -238,7 +222,6 @@ int main(int argc, char *argv[])
 
                 // Check if dimensions are comma-separated integers
                 char *token = strtok(argv[++i], ",");
-                ndim = 1; // input layer
                 for (int l = 0; l < 9 && token != NULL; l++)
                 {
                     if (sscanf(token, "%d%c", &dims_hidden[l], &c) != 1)
@@ -247,9 +230,8 @@ int main(int argc, char *argv[])
                         exit(1);
                     }
                     token = strtok(NULL, ",");
-                    ndim++;
+                    ndim_hidden++;
                 }
-                ndim++; // output layer
 
                 if (token != NULL)
                 {
@@ -290,6 +272,17 @@ int main(int argc, char *argv[])
                 }
             }
 
+            else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--input") == 0)
+            {
+                if (i + 1 >= argc)
+                {
+                    printf("%serror:%s expected path after '%s' flag\n", RED, RESET, argv[i]);
+                    exit(1);
+                }
+
+                input_path = argv[++i];
+            }
+
             else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0)
             {
                 if (i + 1 >= argc)
@@ -298,7 +291,7 @@ int main(int argc, char *argv[])
                     exit(1);
                 }
 
-                model_path = argv[++i];
+                output_path = argv[++i];
             }
 
             else
@@ -308,7 +301,46 @@ int main(int argc, char *argv[])
             }
         }
 
-        return train(batch_size, ndim, dims_hidden, epochs, learning_rate, model_path);
+        Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
+        printf("loaded dataset with %d images\n", dataset.size);
+
+        Network network;
+        if (ndim_hidden != 0 && input_path != NULL)
+        {
+            printf("%serror:%s --dims and --output flags are not compatible\n", RED, RESET);
+            exit(1);
+        }
+        else if (input_path == NULL)
+        {
+            int ndim = ndim_hidden == 0 ? 4 : ndim_hidden + 2;
+            int dims[ndim];
+            dims[0] = dataset.rows * dataset.cols;
+            for (int i = 1; i < ndim - 1; i++)
+            {
+                dims[i] = dims_hidden[i - 1];
+            }
+            dims[ndim - 1] = 10;
+            network = network_create(ndim, dims);
+        }
+        else
+        {
+            FILE *file = fopen(input_path, "rb");
+            if (file == NULL)
+            {
+                printf("%serror:%s '%s' does not exists\n", RED, RESET, input_path);
+                exit(1);
+            }
+
+            network = deserialize_network(file);
+            fclose(file);
+        }
+
+        printf("initialized network with layers:");
+        for (int i = 0; i < network.ndim; i++)
+            printf(" %d", network.dims[i]);
+        printf("\n");
+
+        return train(network, dataset, batch_size, epochs, learning_rate, output_path);
     }
 
     else if (strcmp(argv[1], "bench") == 0)
