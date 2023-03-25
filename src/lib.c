@@ -111,7 +111,7 @@ int read_network_order(FILE *file)
     int num;
     if (fread(&num, 4, 1, file) != 1)
     {
-        printf("%serror:%s failed to read file %d\n", RED, RESET);
+        printf("%serror:%s failed to read file\n", RED, RESET);
         exit(1);
     };
     return ((num >> 24) & 0xff) |
