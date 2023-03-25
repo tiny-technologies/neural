@@ -1,30 +1,14 @@
+#include <ctype.h>
 #include "lib.c"
 
 // SUBCOMMANDS
 
-int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learning_rate, char *model_path)
+int train(Network network, Dataset dataset, int batch_size, int epochs, double learning_rate, char *model_path)
 {
-    Network network;
-
     // training
     {
-        Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
-        printf("loaded dataset with %d images\n", dataset.size);
-
-        int dims[ndim];
-        dims[0] = dataset.rows * dataset.cols;
-        for (int i = 1; i < ndim - 1; i++)
-        {
-            dims[i] = dims_hidden[i - 1];
-        }
-        dims[ndim - 1] = 10;
-
-        printf("initialized network with layers:");
-        for (int i = 0; i < ndim; i++)
-            printf(" %d", dims[i]);
-        printf("\n");
-
-        network = network_create(ndim, dims);
+        printf("start training with learning rate of %s%.4lf%s and %s%d%s epochs\n",
+               BOLD, learning_rate, RESET, BOLD, epochs, RESET);
         for (int i = 0; i < epochs; i++)
         {
             printf("%sEpoch %d%s\n", BOLD, i, RESET);
@@ -118,7 +102,7 @@ int run(char *model_path)
     FILE *file = fopen(model_path, "rb");
     if (file == NULL)
     {
-        printf("%serror:%s '%s' does not exists\n", RED, RESET, model_path);
+        printf("%serror:%s '%s' does not exist\n", RED, RESET, model_path);
         exit(1);
     }
 
@@ -155,19 +139,24 @@ int run(char *model_path)
 
 int print_usage_main()
 {
-    printf("Usage:\n\n");
-    printf("    %sneural <command> [<args>]%s\n\n", BOLD, RESET);
-    printf("Commands:\n\n");
+    printf("Usage:\n");
+    printf("\n");
+    printf("    %sneural <command> [<args>]%s\n", BOLD, RESET);
+    printf("Commands:\n");
+    printf("\n");
     printf("    %srun%s    Run inference using a trained network\n", BOLD, RESET);
-    printf("      %s<path>%s                    path to model (default: default.model)\n", BOLD, RESET);
+    printf("      %s<path>%s                      path to model (default: default.model)\n", BOLD, RESET);
     printf("\n");
     printf("    %strain%s  Train a new network and store it to disk\n", BOLD, RESET);
     printf("      %s-b, --batch-size <INT>%s      samples per batch (default: 200)\n", BOLD, RESET);
     printf("      %s-d, --dims <INT,INT,..>%s     dimensions of hidden layers (default: 16,16)\n", BOLD, RESET);
     printf("      %s-e, --epochs <INT>%s          number of epochs (default: 10)\n", BOLD, RESET);
-    printf("      %s-l, --learning-rate <REAL>%s  step size of parameter update (default: 0.001)\n", BOLD, RESET);
-    printf("      %s-o, --output <PATH>%s         output path of the trained model (default: default.model)\n\n", BOLD, RESET);
-    printf("    %sbench%s  Benchmark forward and backward pass\n\n", BOLD, RESET);
+    printf("      %s-l, --learning-rate <REAL>%s  step size of parameter update (default: 0.01)\n", BOLD, RESET);
+    printf("      %s-i, --input <PATH>%s          path to model used as starting point (optional)\n", BOLD, RESET);
+    printf("      %s-o, --output <PATH>%s         output path of the trained model (default: default.model)\n", BOLD, RESET);
+    printf("\n");
+    printf("    %sbench%s  Benchmark forward and backward pass\n", BOLD, RESET);
+    printf("\n");
     printf("    %shelp%s   Show this message and exit\n", BOLD, RESET);
     printf("\n");
 
@@ -201,14 +190,13 @@ int main(int argc, char *argv[])
     {
         // default values
         int batch_size = 200;
-        int dims_hidden[8] = {16, 16};
-        int ndim = 4;
+        char *dims_string = NULL;
         int epochs = 10;
-        double learning_rate = 0.001;
-        char *model_path = "default.model";
+        double learning_rate = 0.01;
+        char *output_path = "default.model";
+        char *input_path = NULL;
 
-        // Parse optional flags
-        char c;
+        // parse optional flags
         for (int i = 2; i < argc; i++)
         {
 
@@ -221,6 +209,7 @@ int main(int argc, char *argv[])
                 }
 
                 // Check if batch size is an integer
+                char c;
                 if (sscanf(argv[++i], "%d%c", &batch_size, &c) != 1)
                 {
                     printf("%serror:%s invalid batch size '%s'\n", RED, RESET, argv[i]);
@@ -236,26 +225,7 @@ int main(int argc, char *argv[])
                     exit(1);
                 }
 
-                // Check if dimensions are comma-separated integers
-                char *token = strtok(argv[++i], ",");
-                ndim = 1; // input layer
-                for (int l = 0; l < 9 && token != NULL; l++)
-                {
-                    if (sscanf(token, "%d%c", &dims_hidden[l], &c) != 1)
-                    {
-                        printf("%serror:%s invalid dimensions '%s'\n", RED, RESET, token);
-                        exit(1);
-                    }
-                    token = strtok(NULL, ",");
-                    ndim++;
-                }
-                ndim++; // output layer
-
-                if (token != NULL)
-                {
-                    printf("%serror:%s not more than 8 hidden layers allowed", RED, RESET);
-                    exit(1);
-                }
+                dims_string = argv[++i];
             }
 
             else if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--epochs") == 0)
@@ -267,6 +237,7 @@ int main(int argc, char *argv[])
                 }
 
                 // Check if batch size is an integer
+                char c;
                 if (sscanf(argv[++i], "%d%c", &epochs, &c) != 1)
                 {
                     printf("%serror:%s invalid epochs '%s'\n", RED, RESET, argv[i]);
@@ -283,11 +254,23 @@ int main(int argc, char *argv[])
                 }
 
                 // Check if learning rate is a real number
+                char c;
                 if (sscanf(argv[++i], "%lf%c", &learning_rate, &c) != 1)
                 {
                     printf("%serror:%s invalid learning rate '%s'\n", RED, RESET, argv[i]);
                     exit(1);
                 }
+            }
+
+            else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--input") == 0)
+            {
+                if (i + 1 >= argc)
+                {
+                    printf("%serror:%s expected path after '%s' flag\n", RED, RESET, argv[i]);
+                    exit(1);
+                }
+
+                input_path = argv[++i];
             }
 
             else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0)
@@ -298,7 +281,7 @@ int main(int argc, char *argv[])
                     exit(1);
                 }
 
-                model_path = argv[++i];
+                output_path = argv[++i];
             }
 
             else
@@ -308,7 +291,84 @@ int main(int argc, char *argv[])
             }
         }
 
-        return train(batch_size, ndim, dims_hidden, epochs, learning_rate, model_path);
+        // load dataset
+        Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
+        printf("loaded dataset with %d images\n", dataset.size);
+
+        // initialize network
+        Network network;
+        if (input_path != NULL)
+        {
+            if (dims_string != NULL)
+            {
+                printf("%serror:%s --dims and --input flags are not compatible\n", RED, RESET);
+                exit(1);
+            }
+
+            FILE *file = fopen(input_path, "rb");
+            if (file == NULL)
+            {
+                printf("%serror:%s '%s' does not exist\n", RED, RESET, input_path);
+                exit(1);
+            }
+
+            network = deserialize_network(file);
+            fclose(file);
+        }
+        else
+        {
+            int ndim;
+            if (dims_string == NULL)
+            {
+                ndim = 4;
+            }
+            else
+            {
+                ndim = 3;
+                for (char *c = dims_string; *c != '\0'; c++)
+                {
+                    ndim += *c == ',';
+                    if (!isdigit(*c) && *c != ',')
+                    {
+                        printf("%serror:%s invalid character '%c' in '%s'\n",
+                               RED, RESET, *c, dims_string);
+                        exit(1);
+                    }
+                }
+            }
+
+            int *dims = malloc(ndim * sizeof(int));
+
+            char *c = dims_string;
+            dims[0] = 784;
+            for (int l = 1; l < ndim - 1; l++)
+            {
+                if (dims_string == NULL)
+                {
+                    dims[l] = 16;
+                }
+                else
+                {
+                    dims[l] = atoi(c);
+                    if (!dims[l])
+                    {
+                        printf("%serror:%s invalid value '%s' for --dims flag\n", RED, RESET, dims_string);
+                        exit(1);
+                    }
+                    c = strchr(c, ',') + 1;
+                }
+            }
+            dims[ndim - 1] = 10;
+            network = network_create(ndim, dims);
+            free(dims);
+        }
+
+        printf("initialized network with layers: %s%d", BOLD, network.dims[0]);
+        for (int i = 1; i < network.ndim; i++)
+            printf("x%d", network.dims[i]);
+        printf("%s\n", RESET);
+
+        return train(network, dataset, batch_size, epochs, learning_rate, output_path);
     }
 
     else if (strcmp(argv[1], "bench") == 0)

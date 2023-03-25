@@ -57,13 +57,13 @@ void print_image(Image image)
     }
 }
 
-void print_progress(double value, int progress, int max, int duration)
+void print_progress(int progress, int max, int duration)
 {
     int n_blocks = 32;
     int blocks = n_blocks * progress / max;
     int percentage = 100 * progress / max;
 
-    printf("%.4lf %s", value, GREEN);
+    printf("%s", GREEN);
     for (int j = 0; j < blocks; j++)
     {
         printf("\U00002501");
@@ -111,7 +111,7 @@ int read_network_order(FILE *file)
     int num;
     if (fread(&num, 4, 1, file) != 1)
     {
-        printf("error: failed to read file\n");
+        printf("%serror:%s failed to read file\n", RED, RESET);
         exit(1);
     };
     return ((num >> 24) & 0xff) |
@@ -333,14 +333,14 @@ void epoch(Network network, Dataset dataset, int batch_size, double learning_rat
     double loss = 0;
     for (int i = 0; i < batches; i++)
     {
-        printf("%s ", CLEAR);
-        print_progress(loss / i, i, batches, (int)timestamp() - start);
+        printf("%sloss: %.4lf ", CLEAR, loss / (i + 1));
+        print_progress(i, batches, (int)timestamp() - start);
 
         loss += update_mini_batch(network, dataset.images + i * batch_size, batch_size, learning_rate) / batch_size;
     }
 
-    printf("%s ", CLEAR);
-    print_progress(loss / batches, batches, batches, (int)timestamp() - start);
+    printf("%sloss: %.4lf ", CLEAR, loss / batches);
+    print_progress(batches, batches, (int)timestamp() - start);
 }
 
 // IO
@@ -353,7 +353,7 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
         FILE *file = fopen(path_to_labels, "rb");
         if (file == NULL)
         {
-            printf("file not found\n");
+            printf("%serror:%s file '%s' not found\n", RED, RESET, path_to_labels);
             exit(1);
         }
 
@@ -366,7 +366,7 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
         {
             if (fread(&number, 1, 1, file) != 1)
             {
-                printf("error: failed to read label from file\n");
+                printf("%serror:%s failed to read label from file\n", RED, RESET);
                 exit(1);
             };
             dataset.images[i].label = calloc(sizeof(double), 10);
@@ -379,7 +379,7 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
         FILE *file = fopen(path_to_images, "rb");
         if (file == NULL)
         {
-            printf("file not found\n");
+            printf("%serror:%s file '%s' not found\n", RED, RESET, path_to_images);
             exit(1);
         }
 
@@ -393,8 +393,9 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
         for (int i = 0; i < dataset.size; i++)
         {
             dataset.images[i].data = malloc(sizeof(double) * pixel);
-            if (fread(buffer, 1, pixel, file) != pixel)
+            if (fread(buffer, 1, pixel, file) != (unsigned)pixel)
             {
+                printf("%serror:%s failed to read images from file\n", RED, RESET);
                 exit(1);
             };
             for (int j = 0; j < pixel; j++)
@@ -462,13 +463,13 @@ Network deserialize_network(FILE *file)
 
     for (int l = 1; l < ndim; l++)
     {
-        failures += fread(network.weights[l], sizeof(double), dims[l] * dims[l - 1], file) != dims[l] * dims[l - 1];
-        failures += fread(network.biases[l], sizeof(double), dims[l], file) != dims[l];
+        failures += fread(network.weights[l], sizeof(double), dims[l] * dims[l - 1], file) != (unsigned)dims[l] * dims[l - 1];
+        failures += fread(network.biases[l], sizeof(double), dims[l], file) != (unsigned)dims[l];
     }
 
     if (failures)
     {
-        printf("error: failed to load read network from file %d\n", failures);
+        printf("%serror:%s failed to load read network from file %d\n", RED, RESET, failures);
         exit(1);
     }
 
