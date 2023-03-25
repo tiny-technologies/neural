@@ -393,7 +393,7 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
         for (int i = 0; i < dataset.size; i++)
         {
             dataset.images[i].data = malloc(sizeof(double) * pixel);
-            if (fread(buffer, 1, pixel, file) != pixel)
+            if (fread(buffer, 1, pixel, file) != (unsigned)pixel)
             {
                 printf("error: failed to read images from file\n");
                 exit(1);
@@ -463,8 +463,8 @@ Network deserialize_network(FILE *file)
 
     for (int l = 1; l < ndim; l++)
     {
-        failures += fread(network.weights[l], sizeof(double), dims[l] * dims[l - 1], file) != dims[l] * dims[l - 1];
-        failures += fread(network.biases[l], sizeof(double), dims[l], file) != dims[l];
+        failures += fread(network.weights[l], sizeof(double), dims[l] * dims[l - 1], file) != (unsigned)dims[l] * dims[l - 1];
+        failures += fread(network.biases[l], sizeof(double), dims[l], file) != (unsigned)dims[l];
     }
 
     if (failures)

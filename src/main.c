@@ -6,7 +6,8 @@ int train(Network network, Dataset dataset, int batch_size, int epochs, double l
 {
     // training
     {
-        printf("start training with learning rate %.4lf and %d epochs\n", learning_rate, epochs);
+        printf("start training with learning rate of %s%.4lf%s and %s%d%s epochs\n",
+               BOLD, learning_rate, RESET, BOLD, epochs, RESET);
         for (int i = 0; i < epochs; i++)
         {
             printf("%sEpoch %d%s\n", BOLD, i, RESET);
@@ -335,10 +336,10 @@ int main(int argc, char *argv[])
             fclose(file);
         }
 
-        printf("initialized network with layers:");
-        for (int i = 0; i < network.ndim; i++)
-            printf(" %d", network.dims[i]);
-        printf("\n");
+        printf("initialized network with layers: %s%d", BOLD, network.dims[0]);
+        for (int i = 1; i < network.ndim; i++)
+            printf("x%d", network.dims[i]);
+        printf("%s\n", RESET);
 
         return train(network, dataset, batch_size, epochs, learning_rate, output_path);
     }
