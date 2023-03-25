@@ -343,6 +343,11 @@ int main(int argc, char *argv[])
                 else
                 {
                     dims[l] = atoi(c);
+                    if (!dims[l])
+                    {
+                        printf("%serror:%s invalid value '%s' for --dims flag\n", RED, RESET, dims_string);
+                        exit(1);
+                    }
                     c = strchr(c, ',') + 1;
                 }
             }
