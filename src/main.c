@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "lib.c"
 
 // SUBCOMMANDS
@@ -327,6 +328,12 @@ int main(int argc, char *argv[])
                 for (char *c = dims_string; *c != '\0'; c++)
                 {
                     ndim += *c == ',';
+                    if (!isdigit(*c) && *c != ',')
+                    {
+                        printf("%serror:%s invalid character '%c' in '%s'\n",
+                               RED, RESET, *c, dims_string);
+                        exit(1);
+                    }
                 }
             }
 
