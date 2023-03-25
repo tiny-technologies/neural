@@ -111,7 +111,7 @@ int read_network_order(FILE *file)
     int num;
     if (fread(&num, 4, 1, file) != 1)
     {
-        printf("error: failed to read file\n");
+        printf("%serror:%s failed to read file %d\n", RED, RESET);
         exit(1);
     };
     return ((num >> 24) & 0xff) |
@@ -353,7 +353,7 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
         FILE *file = fopen(path_to_labels, "rb");
         if (file == NULL)
         {
-            printf("file not found\n");
+            printf("%serror:%s file '%s' not found\n", RED, RESET, path_to_labels);
             exit(1);
         }
 
@@ -366,7 +366,7 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
         {
             if (fread(&number, 1, 1, file) != 1)
             {
-                printf("error: failed to read label from file\n");
+                printf("%serror:%s failed to read label from file\n", RED, RESET);
                 exit(1);
             };
             dataset.images[i].label = calloc(sizeof(double), 10);
@@ -379,7 +379,7 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
         FILE *file = fopen(path_to_images, "rb");
         if (file == NULL)
         {
-            printf("file not found\n");
+            printf("%serror:%s file '%s' not found\n", RED, RESET, path_to_labels);
             exit(1);
         }
 
@@ -395,7 +395,7 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
             dataset.images[i].data = malloc(sizeof(double) * pixel);
             if (fread(buffer, 1, pixel, file) != (unsigned)pixel)
             {
-                printf("error: failed to read images from file\n");
+                printf("%serror:%s failed to read images from file\n", RED, RESET);
                 exit(1);
             };
             for (int j = 0; j < pixel; j++)
@@ -469,7 +469,7 @@ Network deserialize_network(FILE *file)
 
     if (failures)
     {
-        printf("error: failed to load read network from file %d\n", failures);
+        printf("%serror:%s failed to load read network from file %d\n", RED, RESET, failures);
         exit(1);
     }
 
