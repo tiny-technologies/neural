@@ -288,53 +288,16 @@ int main(int argc, char *argv[])
         Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
         printf("loaded dataset with %d images\n", dataset.size);
 
-        // default for dims
-        if (dims_str != NULL && input_path != NULL)
-        {
-            printf("%serror:%s --dims and --output flags are not compatible\n", RED, RESET);
-            exit(1);
-        }
-
-        int ndim;
-        if (dims_str == NULL)
-        {
-            ndim = 4;
-        }
-        else
-        {
-            ndim = 3;
-            for (char *x = dims_str; *x != '\0'; x++)
-            {
-                ndim += *x == ',';
-            }
-        }
-
-        int *dims = malloc(ndim * sizeof(int));
-
-        char *x = dims_str;
-        dims[0] = 784;
-        for (int l = 1; l < ndim - 1; l++)
-        {
-            if (dims_str == NULL)
-            {
-                dims[l] = 16;
-            }
-            else
-            {
-                dims[l] = atoi(x);
-                x = strchr(x, ',') + 1;
-            }
-        }
-        dims[ndim - 1] = 10;
-
         // initialize network
         Network network;
-        if (input_path == NULL)
+        if (input_path != NULL)
         {
-            network = network_create(ndim, dims);
-        }
-        else
-        {
+            if (dims_str != NULL)
+            {
+                printf("%serror:%s --dims and --input flags are not compatible\n", RED, RESET);
+                exit(1);
+            }
+
             FILE *file = fopen(input_path, "rb");
             if (file == NULL)
             {
@@ -344,6 +307,42 @@ int main(int argc, char *argv[])
 
             network = deserialize_network(file);
             fclose(file);
+        }
+        else
+        {
+            int ndim;
+            if (dims_str == NULL)
+            {
+                ndim = 4;
+            }
+            else
+            {
+                ndim = 3;
+                for (char *x = dims_str; *x != '\0'; x++)
+                {
+                    ndim += *x == ',';
+                }
+            }
+
+            int *dims = malloc(ndim * sizeof(int));
+
+            char *x = dims_str;
+            dims[0] = 784;
+            for (int l = 1; l < ndim - 1; l++)
+            {
+                if (dims_str == NULL)
+                {
+                    dims[l] = 16;
+                }
+                else
+                {
+                    dims[l] = atoi(x);
+                    x = strchr(x, ',') + 1;
+                }
+            }
+            dims[ndim - 1] = 10;
+            network = network_create(ndim, dims);
+            free(dims);
         }
 
         printf("initialized network with layers: %s%d", BOLD, network.dims[0]);
