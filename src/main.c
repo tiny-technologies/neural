@@ -185,14 +185,13 @@ int main(int argc, char *argv[])
     {
         // default values
         int batch_size = 200;
-        int dims_hidden[8] = {16, 16};
-        int ndim_hidden = 0;
+        char *dims_str = NULL;
         int epochs = 10;
         double learning_rate = 0.001;
         char *output_path = "default.model";
         char *input_path = NULL;
 
-        // Parse optional flags
+        // parse optional flags
         char c;
         for (int i = 2; i < argc; i++)
         {
@@ -221,24 +220,7 @@ int main(int argc, char *argv[])
                     exit(1);
                 }
 
-                // Check if dimensions are comma-separated integers
-                char *token = strtok(argv[++i], ",");
-                for (int l = 0; l < 9 && token != NULL; l++)
-                {
-                    if (sscanf(token, "%d%c", &dims_hidden[l], &c) != 1)
-                    {
-                        printf("%serror:%s invalid dimensions '%s'\n", RED, RESET, token);
-                        exit(1);
-                    }
-                    token = strtok(NULL, ",");
-                    ndim_hidden++;
-                }
-
-                if (token != NULL)
-                {
-                    printf("%serror:%s not more than 8 hidden layers allowed", RED, RESET);
-                    exit(1);
-                }
+                dims_str = argv[++i];
             }
 
             else if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--epochs") == 0)
@@ -302,25 +284,53 @@ int main(int argc, char *argv[])
             }
         }
 
+        // load dataset
         Dataset dataset = load_mnist_dataset("mnist/train-labels-idx1-ubyte", "mnist/train-images-idx3-ubyte");
         printf("loaded dataset with %d images\n", dataset.size);
 
-        Network network;
-        if (ndim_hidden != 0 && input_path != NULL)
+        // default for dims
+        if (dims_str != NULL && input_path != NULL)
         {
             printf("%serror:%s --dims and --output flags are not compatible\n", RED, RESET);
             exit(1);
         }
-        else if (input_path == NULL)
+
+        int ndim;
+        if (dims_str == NULL)
         {
-            int ndim = ndim_hidden == 0 ? 4 : ndim_hidden + 2;
-            int dims[ndim];
-            dims[0] = dataset.rows * dataset.cols;
-            for (int i = 1; i < ndim - 1; i++)
+            ndim = 4;
+        }
+        else
+        {
+            ndim = 3;
+            for (char *x = dims_str; *x != '\0'; x++)
             {
-                dims[i] = dims_hidden[i - 1];
+                ndim += *x == ',';
             }
-            dims[ndim - 1] = 10;
+        }
+
+        int *dims = malloc(ndim * sizeof(int));
+
+        char *x = dims_str;
+        dims[0] = 784;
+        for (int l = 1; l < ndim - 1; l++)
+        {
+            if (dims_str == NULL)
+            {
+                dims[l] = 16;
+            }
+            else
+            {
+                dims[l] = atoi(x);
+                x = strchr(x, ',') + 1;
+            }
+        }
+        dims[ndim - 1] = 10;
+
+        // initialize network
+        Network network;
+        if (input_path == NULL)
+        {
             network = network_create(ndim, dims);
         }
         else
