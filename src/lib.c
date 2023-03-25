@@ -57,13 +57,13 @@ void print_image(Image image)
     }
 }
 
-void print_progress(double value, int progress, int max, int duration)
+void print_progress(int progress, int max, int duration)
 {
     int n_blocks = 32;
     int blocks = n_blocks * progress / max;
     int percentage = 100 * progress / max;
 
-    printf("%.4lf %s", value, GREEN);
+    printf("%s", GREEN);
     for (int j = 0; j < blocks; j++)
     {
         printf("\U00002501");
@@ -333,14 +333,14 @@ void epoch(Network network, Dataset dataset, int batch_size, double learning_rat
     double loss = 0;
     for (int i = 0; i < batches; i++)
     {
-        printf("%s ", CLEAR);
-        print_progress(loss / i, i, batches, (int)timestamp() - start);
+        printf("%sloss: %.4lf ", CLEAR, loss / (i + 1));
+        print_progress(i, batches, (int)timestamp() - start);
 
         loss += update_mini_batch(network, dataset.images + i * batch_size, batch_size, learning_rate) / batch_size;
     }
 
-    printf("%s ", CLEAR);
-    print_progress(loss / batches, batches, batches, (int)timestamp() - start);
+    printf("%sloss: %.4lf ", CLEAR, loss / batches);
+    print_progress(batches, batches, (int)timestamp() - start);
 }
 
 // IO
@@ -395,6 +395,7 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
             dataset.images[i].data = malloc(sizeof(double) * pixel);
             if (fread(buffer, 1, pixel, file) != pixel)
             {
+                printf("error: failed to read images from file\n");
                 exit(1);
             };
             for (int j = 0; j < pixel; j++)
