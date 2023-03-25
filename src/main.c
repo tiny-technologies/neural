@@ -150,8 +150,10 @@ int print_usage_main()
     printf("      %s-e, --epochs <INT>%s          number of epochs (default: 10)\n", BOLD, RESET);
     printf("      %s-l, --learning-rate <REAL>%s  step size of parameter update (default: 0.001)\n", BOLD, RESET);
     printf("      %s-i, --input <PATH>%s          path to model used as starting point (optional)\n", BOLD, RESET);
-    printf("      %s-o, --output <PATH>%s         output path of the trained model (default: default.model)\n\n", BOLD, RESET);
-    printf("    %sbench%s  Benchmark forward and backward pass\n\n", BOLD, RESET);
+    printf("      %s-o, --output <PATH>%s         output path of the trained model (default: default.model)\n", BOLD, RESET);
+    printf("\n");
+    printf("    %sbench%s  Benchmark forward and backward pass\n", BOLD, RESET);
+    printf("\n");
     printf("    %shelp%s   Show this message and exit\n", BOLD, RESET);
     printf("\n");
 
