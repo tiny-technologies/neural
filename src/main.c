@@ -9,7 +9,7 @@ int train(Network network, Dataset dataset, int batch_size, int epochs, double l
         printf("start training with learning rate %.4lf and %d epochs\n", learning_rate, epochs);
         for (int i = 0; i < epochs; i++)
         {
-            printf("Epoch: %d\n", i);
+            printf("%sEpoch %d%s\n", BOLD, i, RESET);
             epoch(network, dataset, batch_size, learning_rate);
         }
 
