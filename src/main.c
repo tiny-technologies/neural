@@ -301,7 +301,7 @@ int main(int argc, char *argv[])
             FILE *file = fopen(input_path, "rb");
             if (file == NULL)
             {
-                printf("%serror:%s '%s' does not exists\n", RED, RESET, input_path);
+                printf("%serror:%s '%s' does not exist\n", RED, RESET, input_path);
                 exit(1);
             }
 
