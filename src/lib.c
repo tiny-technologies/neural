@@ -379,7 +379,7 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
         FILE *file = fopen(path_to_images, "rb");
         if (file == NULL)
         {
-            printf("%serror:%s file '%s' not found\n", RED, RESET, path_to_labels);
+            printf("%serror:%s file '%s' not found\n", RED, RESET, path_to_images);
             exit(1);
         }
 
