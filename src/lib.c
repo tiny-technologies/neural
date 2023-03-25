@@ -411,7 +411,6 @@ Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
 
 void destroy_dataset(Dataset dataset)
 {
-
     for (int i = 0; i < dataset.size; i++)
     {
         free(dataset.images[i].label);
@@ -472,6 +471,8 @@ Network deserialize_network(FILE *file)
         printf("error: failed to load read network from file %d\n", failures);
         exit(1);
     }
+
+    free(dims);
 
     return network;
 }
