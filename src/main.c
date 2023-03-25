@@ -189,14 +189,13 @@ int main(int argc, char *argv[])
     {
         // default values
         int batch_size = 200;
-        char *dims_str = NULL;
+        char *dims_string = NULL;
         int epochs = 10;
         double learning_rate = 0.001;
         char *output_path = "default.model";
         char *input_path = NULL;
 
         // parse optional flags
-        char c;
         for (int i = 2; i < argc; i++)
         {
 
@@ -209,6 +208,7 @@ int main(int argc, char *argv[])
                 }
 
                 // Check if batch size is an integer
+                char c;
                 if (sscanf(argv[++i], "%d%c", &batch_size, &c) != 1)
                 {
                     printf("%serror:%s invalid batch size '%s'\n", RED, RESET, argv[i]);
@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
                     exit(1);
                 }
 
-                dims_str = argv[++i];
+                dims_string = argv[++i];
             }
 
             else if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--epochs") == 0)
@@ -236,6 +236,7 @@ int main(int argc, char *argv[])
                 }
 
                 // Check if batch size is an integer
+                char c;
                 if (sscanf(argv[++i], "%d%c", &epochs, &c) != 1)
                 {
                     printf("%serror:%s invalid epochs '%s'\n", RED, RESET, argv[i]);
@@ -252,6 +253,7 @@ int main(int argc, char *argv[])
                 }
 
                 // Check if learning rate is a real number
+                char c;
                 if (sscanf(argv[++i], "%lf%c", &learning_rate, &c) != 1)
                 {
                     printf("%serror:%s invalid learning rate '%s'\n", RED, RESET, argv[i]);
@@ -296,7 +298,7 @@ int main(int argc, char *argv[])
         Network network;
         if (input_path != NULL)
         {
-            if (dims_str != NULL)
+            if (dims_string != NULL)
             {
                 printf("%serror:%s --dims and --input flags are not compatible\n", RED, RESET);
                 exit(1);
@@ -315,33 +317,33 @@ int main(int argc, char *argv[])
         else
         {
             int ndim;
-            if (dims_str == NULL)
+            if (dims_string == NULL)
             {
                 ndim = 4;
             }
             else
             {
                 ndim = 3;
-                for (char *x = dims_str; *x != '\0'; x++)
+                for (char *c = dims_string; *c != '\0'; c++)
                 {
-                    ndim += *x == ',';
+                    ndim += *c == ',';
                 }
             }
 
             int *dims = malloc(ndim * sizeof(int));
 
-            char *x = dims_str;
+            char *c = dims_string;
             dims[0] = 784;
             for (int l = 1; l < ndim - 1; l++)
             {
-                if (dims_str == NULL)
+                if (dims_string == NULL)
                 {
                     dims[l] = 16;
                 }
                 else
                 {
                     dims[l] = atoi(x);
-                    x = strchr(x, ',') + 1;
+                    c = strchr(c, ',') + 1;
                 }
             }
             dims[ndim - 1] = 10;
