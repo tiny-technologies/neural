@@ -27,7 +27,7 @@ int train(int batch_size, int ndim, int *dims_hidden, int epochs, double learnin
         network = network_create(ndim, dims);
         for (int i = 0; i < epochs; i++)
         {
-            printf("Epoch: %d\n", i);
+            printf("%sEpoch %d%s\n", BOLD, i, RESET);
             epoch(network, dataset, batch_size, learning_rate);
         }
 
