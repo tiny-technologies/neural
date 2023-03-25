@@ -342,7 +342,7 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    dims[l] = atoi(x);
+                    dims[l] = atoi(c);
                     c = strchr(c, ',') + 1;
                 }
             }
