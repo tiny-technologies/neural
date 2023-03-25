@@ -150,7 +150,7 @@ int print_usage_main()
     printf("      %s-b, --batch-size <INT>%s      samples per batch (default: 200)\n", BOLD, RESET);
     printf("      %s-d, --dims <INT,INT,..>%s     dimensions of hidden layers (default: 16,16)\n", BOLD, RESET);
     printf("      %s-e, --epochs <INT>%s          number of epochs (default: 10)\n", BOLD, RESET);
-    printf("      %s-l, --learning-rate <REAL>%s  step size of parameter update (default: 0.001)\n", BOLD, RESET);
+    printf("      %s-l, --learning-rate <REAL>%s  step size of parameter update (default: 0.01)\n", BOLD, RESET);
     printf("      %s-i, --input <PATH>%s          path to model used as starting point (optional)\n", BOLD, RESET);
     printf("      %s-o, --output <PATH>%s         output path of the trained model (default: default.model)\n", BOLD, RESET);
     printf("\n");
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
         int batch_size = 200;
         char *dims_string = NULL;
         int epochs = 10;
-        double learning_rate = 0.001;
+        double learning_rate = 0.01;
         char *output_path = "default.model";
         char *input_path = NULL;
 
