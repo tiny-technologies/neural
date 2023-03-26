@@ -177,7 +177,7 @@ int print_usage_main()
     printf("Commands:\n");
     printf("\n");
     printf("    %srun%s    Run inference using a trained network\n", BOLD, RESET);
-    // printf("      %s<path>%s                      path to model (default: default.model)\n", BOLD, RESET);
+    printf("      %s<path>%s                      path to model\n", BOLD, RESET);
     printf("      %s<path>%s                      path to PGM P5 image \n", BOLD, RESET);
     printf("\n");
     printf("    %stest%s   Test the accurary of a trained network\n", BOLD, RESET);
