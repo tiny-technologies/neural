@@ -46,7 +46,7 @@ To finetune an existing model or train a new one from scratch, use the
 neural train
 ```
 
-subcommand.
+subcommand. For detailed list of command line flags see below.
 
 ### Help
 
