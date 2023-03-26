@@ -97,7 +97,35 @@ int bench()
     return 0;
 }
 
-int run(char *model_path)
+int run(char *model_path, char *image_path)
+{
+    double *data = load_pgm_image(image_path);
+    FILE *file = fopen(model_path, "rb");
+    if (file == NULL)
+    {
+        printf("%serror:%s '%s' does not exist\n", RED, RESET, model_path);
+        exit(1);
+    }
+
+    Network network = deserialize_network(file);
+    fclose(file);
+
+    printf("info: loaded model '%s' with size %d", model_path, network.dims[0]);
+    for (int i = 1; i < network.ndim; i++)
+    {
+        printf("x%d", network.dims[i]);
+    }
+    printf("\n");
+
+    forward(network, data);
+    int prediction = arg_max(network.neurons[network.ndim - 1]);
+
+    printf("model prediction: %s%d%s\n", BOLD, prediction, RESET);
+
+    return 0;
+}
+
+int test(char *model_path)
 {
     FILE *file = fopen(model_path, "rb");
     if (file == NULL)
@@ -145,6 +173,10 @@ int print_usage_main()
     printf("Commands:\n");
     printf("\n");
     printf("    %srun%s    Run inference using a trained network\n", BOLD, RESET);
+    // printf("      %s<path>%s                      path to model (default: default.model)\n", BOLD, RESET);
+    printf("      %s<path>%s                      path to PGM P5 image \n", BOLD, RESET);
+    printf("\n");
+    printf("    %stest%s   Test the accurary of a trained network\n", BOLD, RESET);
     printf("      %s<path>%s                      path to model (default: default.model)\n", BOLD, RESET);
     printf("\n");
     printf("    %strain%s  Train a new network and store it to disk\n", BOLD, RESET);
@@ -177,13 +209,29 @@ int main(int argc, char *argv[])
 
     else if (strcmp(argv[1], "run") == 0)
     {
+        if (argc != 4)
+        {
+            printf("%serror:%s unexpected number of arguments\n", RED, RESET);
+            exit(1);
+        }
+        else if (argc > 4)
+        {
+            printf("%serror:%s unexpected argument '%s'\n", RED, RESET, argv[4]);
+            exit(1);
+        }
+
+        return run(argv[2], argv[3]);
+    }
+
+    else if (strcmp(argv[1], "test") == 0)
+    {
         if (argc > 3)
         {
             printf("%serror:%s unexpected argument '%s'\n", RED, RESET, argv[3]);
             exit(1);
         }
 
-        return run(argc == 2 ? "default.model" : argv[2]);
+        return test(argc == 2 ? "default.model" : argv[2]);
     }
 
     else if (strcmp(argv[1], "train") == 0)

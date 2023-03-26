@@ -22,12 +22,32 @@ nix profile install github:tiny-technologies/neural
 Usage:
 
     neural <command> [<args>]
-
-These are common commands:
+Commands:
 
     run    Run inference using a trained network
+      <path>                      path to PGM P5 image 
+
+    test   Test the accurary of a trained network
+      <path>                      path to model (default: default.model)
+
     train  Train a new network and store it to disk
-    test   Run unit tests
+      -b, --batch-size <INT>      samples per batch (default: 200)
+      -d, --dims <INT,INT,..>     dimensions of hidden layers (default: 16,16)
+      -e, --epochs <INT>          number of epochs (default: 10)
+      -l, --learning-rate <REAL>  step size of parameter update (default: 0.01)
+      -i, --input <PATH>          path to model used as starting point (optional)
+      -o, --output <PATH>         output path of the trained model (default: default.model)
+
+    bench  Benchmark forward and backward pass
+
+    help   Show this message and exit
+
+```
+
+You can edit the `example.pgm` with an image manipulation tool of your choice. Then, run:
+
+```
+neural run <name>.model example.pgm
 ```
 
 ## Development
