@@ -105,7 +105,48 @@ int run(char *model_path, char *image_path)
     forward(network, data);
     int prediction = arg_max(network.neurons[network.ndim - 1]);
 
-    printf("model prediction: %s%d%s\n", BOLD, prediction, RESET);
+    double probabilities[network.dims[network.ndim - 1]];
+
+    double sum = 0;
+    for (int i = 0; i < network.dims[network.ndim - 1]; i++)
+    {
+        probabilities[i] = network.neurons[network.ndim - 1][i];
+        sum += probabilities[i];
+    }
+
+    for (int i = 0; i < network.dims[network.ndim - 1]; i++)
+    {
+        probabilities[i] /= sum;
+    }
+
+    printf("%smodel prediction: %d%s\n", BOLD, prediction, RESET);
+
+    printf("\n");
+    int n_rows = 10;
+    for (int row = 0; row < n_rows; row++)
+    {
+        for (int i = 0; i < network.dims[network.ndim - 1]; i++)
+        {
+            char *symbol = probabilities[i] > 1.0 - ((double)row) / n_rows ? "\U00002588" : " ";
+            printf(" %s%s%s%s%s ", symbol, symbol, symbol, symbol, symbol);
+        }
+        printf("\n");
+    }
+    for (int i = 0; i < network.dims[network.ndim - 1]; i++)
+    {
+        printf(" %.3lf ", probabilities[i]);
+    }
+    printf("\n");
+    for (int i = 0; i < network.dims[network.ndim - 1]; i++)
+    {
+        printf("\U00002500\U00002500\U00002500\U00002500\U00002500\U00002500\U00002500");
+    }
+    printf("\n");
+    for (int i = 0; i < network.dims[network.ndim - 1]; i++)
+    {
+        printf("   %d   ", i);
+    }
+    printf("\n");
 
     network_destroy(network);
     free(data);
