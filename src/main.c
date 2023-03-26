@@ -121,13 +121,12 @@ int run(char *model_path, char *image_path)
 
     printf("%smodel prediction: %d%s\n", BOLD, prediction, RESET);
 
-    printf("\n");
     int n_rows = 10;
     for (int row = 0; row < n_rows; row++)
     {
         for (int i = 0; i < network.dims[network.ndim - 1]; i++)
         {
-            char *symbol = probabilities[i] > 1.0 - ((double)row) / n_rows ? "\U00002588" : " ";
+            char *symbol = probabilities[i] > 1.0 - ((double)row + 0.5) / n_rows ? "\U00002588" : " ";
             printf(" %s%s%s%s%s ", symbol, symbol, symbol, symbol, symbol);
         }
         printf("\n");
