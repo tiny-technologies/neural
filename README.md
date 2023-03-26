@@ -129,3 +129,7 @@ Compile in release mode, with optimizations:
 ```sh
 just build release
 ```
+
+## License
+
+[GNU General Public License v3.0](LICENSE)
