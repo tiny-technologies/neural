@@ -409,7 +409,7 @@ double *load_pgm_image(char *path)
     double *pixel = malloc(width * height * sizeof(double));
     for (int i = 0; i < 28 * 28; i++)
     {
-        pixel[i] = (double)image_data[i];
+        pixel[i] = ((double)image_data[i]) / 255.0;
     }
 
     return pixel;
