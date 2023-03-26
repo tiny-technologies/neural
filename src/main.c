@@ -180,6 +180,7 @@ int print_usage_main()
     printf("Usage:\n");
     printf("\n");
     printf("    %sneural <command> [<args>]%s\n", BOLD, RESET);
+    printf("\n");
     printf("Commands:\n");
     printf("\n");
     printf("    %srun%s    Run inference using a trained network\n", BOLD, RESET);
