@@ -97,27 +97,65 @@ int bench()
     return 0;
 }
 
-int run(char *model_path)
+int run(char *model_path, char *image_path)
 {
-    FILE *file = fopen(model_path, "rb");
-    if (file == NULL)
+    Network network = load_network(model_path);
+    double *data = load_pgm_image(image_path);
+
+    forward(network, data);
+    int prediction = arg_max(network.neurons[network.ndim - 1]);
+
+    double probabilities[network.dims[network.ndim - 1]];
+
+    double sum = 0;
+    for (int i = 0; i < network.dims[network.ndim - 1]; i++)
     {
-        printf("%serror:%s '%s' does not exist\n", RED, RESET, model_path);
-        exit(1);
+        probabilities[i] = network.neurons[network.ndim - 1][i];
+        sum += probabilities[i];
     }
 
-    Network network = deserialize_network(file);
-    fclose(file);
-
-    // todo: maybe move this function deserialize_network
-    printf("info: loaded model '%s' with size %d", model_path, network.dims[0]);
-    for (int i = 1; i < network.ndim; i++)
+    for (int i = 0; i < network.dims[network.ndim - 1]; i++)
     {
-        printf("x%d", network.dims[i]);
+        probabilities[i] /= sum;
+    }
+
+    printf("%smodel prediction: %d%s\n", BOLD, prediction, RESET);
+
+    int n_rows = 10;
+    for (int row = 0; row < n_rows; row++)
+    {
+        for (int i = 0; i < network.dims[network.ndim - 1]; i++)
+        {
+            char *symbol = probabilities[i] > 1.0 - ((double)row + 0.5) / n_rows ? "\U00002588" : " ";
+            printf(" %s%s%s%s%s ", symbol, symbol, symbol, symbol, symbol);
+        }
+        printf("\n");
+    }
+    for (int i = 0; i < network.dims[network.ndim - 1]; i++)
+    {
+        printf(" %.3lf ", probabilities[i]);
+    }
+    printf("\n");
+    for (int i = 0; i < network.dims[network.ndim - 1]; i++)
+    {
+        printf("\U00002500\U00002500\U00002500\U00002500\U00002500\U00002500\U00002500");
+    }
+    printf("\n");
+    for (int i = 0; i < network.dims[network.ndim - 1]; i++)
+    {
+        printf("   %d   ", i);
     }
     printf("\n");
 
-    // todo: pass file image from command line instead
+    network_destroy(network);
+    free(data);
+
+    return 0;
+}
+
+int test(char *model_path)
+{
+    Network network = load_network(model_path);
     Dataset dataset = load_mnist_dataset("mnist/t10k-labels-idx1-ubyte", "mnist/t10k-images-idx3-ubyte");
     printf("loaded dataset with %d images\n", dataset.size);
 
@@ -142,18 +180,23 @@ int print_usage_main()
     printf("Usage:\n");
     printf("\n");
     printf("    %sneural <command> [<args>]%s\n", BOLD, RESET);
+    printf("\n");
     printf("Commands:\n");
     printf("\n");
     printf("    %srun%s    Run inference using a trained network\n", BOLD, RESET);
+    printf("      %s<path>%s                      path to model\n", BOLD, RESET);
+    printf("      %s<path>%s                      path to PGM P5 image \n", BOLD, RESET);
+    printf("\n");
+    printf("    %stest%s   Test the accurary of a trained network\n", BOLD, RESET);
     printf("      %s<path>%s                      path to model (default: default.model)\n", BOLD, RESET);
     printf("\n");
     printf("    %strain%s  Train a new network and store it to disk\n", BOLD, RESET);
-    printf("      %s-b, --batch-size <INT>%s      samples per batch (default: 200)\n", BOLD, RESET);
-    printf("      %s-d, --dims <INT,INT,..>%s     dimensions of hidden layers (default: 16,16)\n", BOLD, RESET);
-    printf("      %s-e, --epochs <INT>%s          number of epochs (default: 10)\n", BOLD, RESET);
-    printf("      %s-l, --learning-rate <REAL>%s  step size of parameter update (default: 0.01)\n", BOLD, RESET);
-    printf("      %s-i, --input <PATH>%s          path to model used as starting point (optional)\n", BOLD, RESET);
-    printf("      %s-o, --output <PATH>%s         output path of the trained model (default: default.model)\n", BOLD, RESET);
+    printf("      %s-b, --batch-size <int>%s      samples per batch (default: 200)\n", BOLD, RESET);
+    printf("      %s-d, --dims <int,int,..>%s     dimensions of hidden layers (default: 16,16)\n", BOLD, RESET);
+    printf("      %s-e, --epochs <int>%s          number of epochs (default: 10)\n", BOLD, RESET);
+    printf("      %s-l, --learning-rate <real>%s  step size of parameter update (default: 0.01)\n", BOLD, RESET);
+    printf("      %s-i, --input <path>%s          path to model used as starting point (optional)\n", BOLD, RESET);
+    printf("      %s-o, --output <path>%s         output path of the trained model (default: default.model)\n", BOLD, RESET);
     printf("\n");
     printf("    %sbench%s  Benchmark forward and backward pass\n", BOLD, RESET);
     printf("\n");
@@ -177,13 +220,29 @@ int main(int argc, char *argv[])
 
     else if (strcmp(argv[1], "run") == 0)
     {
+        if (argc != 4)
+        {
+            printf("%serror:%s unexpected number of arguments\n", RED, RESET);
+            exit(1);
+        }
+        else if (argc > 4)
+        {
+            printf("%serror:%s unexpected argument '%s'\n", RED, RESET, argv[4]);
+            exit(1);
+        }
+
+        return run(argv[2], argv[3]);
+    }
+
+    else if (strcmp(argv[1], "test") == 0)
+    {
         if (argc > 3)
         {
             printf("%serror:%s unexpected argument '%s'\n", RED, RESET, argv[3]);
             exit(1);
         }
 
-        return run(argc == 2 ? "default.model" : argv[2]);
+        return test(argc == 2 ? "default.model" : argv[2]);
     }
 
     else if (strcmp(argv[1], "train") == 0)
@@ -305,15 +364,7 @@ int main(int argc, char *argv[])
                 exit(1);
             }
 
-            FILE *file = fopen(input_path, "rb");
-            if (file == NULL)
-            {
-                printf("%serror:%s '%s' does not exist\n", RED, RESET, input_path);
-                exit(1);
-            }
-
-            network = deserialize_network(file);
-            fclose(file);
+            network = load_network(input_path);
         }
         else
         {
@@ -361,12 +412,12 @@ int main(int argc, char *argv[])
             dims[ndim - 1] = 10;
             network = network_create(ndim, dims);
             free(dims);
-        }
 
-        printf("initialized network with layers: %s%d", BOLD, network.dims[0]);
-        for (int i = 1; i < network.ndim; i++)
-            printf("x%d", network.dims[i]);
-        printf("%s\n", RESET);
+            printf("initialized network with layers: %s%d", BOLD, network.dims[0]);
+            for (int i = 1; i < network.ndim; i++)
+                printf("x%d", network.dims[i]);
+            printf("%s\n", RESET);
+        }
 
         return train(network, dataset, batch_size, epochs, learning_rate, output_path);
     }

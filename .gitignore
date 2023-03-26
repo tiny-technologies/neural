@@ -11,3 +11,4 @@ build
 
 # data
 mnist
+*.pgm

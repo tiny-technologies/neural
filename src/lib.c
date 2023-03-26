@@ -345,6 +345,76 @@ void epoch(Network network, Dataset dataset, int batch_size, double learning_rat
 
 // IO
 
+double *load_pgm_image(char *path)
+{
+    FILE *file = fopen(path, "rb");
+    if (file == NULL)
+    {
+        printf("%serror:%s cannot open file\n", RED, RESET);
+        exit(1);
+    }
+
+    // check magic number
+    char magic[3];
+    if (fread(magic, 1, 3, file) != 3)
+    {
+        printf("%serror:%s failed to read PGM header\n", RED, RESET);
+        exit(1);
+    }
+    else if (!(magic[0] == 0x50 && magic[1] == 0x35 && magic[2] == 0x0a))
+    {
+        printf("%serror:%s file '%s' is not in PGM P5 format\n", RED, RESET, path);
+        exit(1);
+    };
+
+    // skip optional comments
+    int c;
+    while ((c = fgetc(file)) == '#')
+    {
+        while (fgetc(file) != '\n')
+        {
+        }
+    }
+    ungetc(c, file);
+
+    // check image dimensions and maxval
+    int width, height, maxval;
+    if (fscanf(file, "%d %d\n%d\n", &width, &height, &maxval) != 3)
+    {
+        printf("%serror:%s failed to parse PGM header\n", RED, RESET);
+        exit(1);
+    }
+
+    if (width != 28 || height != 28)
+    {
+        printf("%serror:%s image dimensions must be 28x28\n", RED, RESET);
+        exit(1);
+    }
+
+    if (maxval != 255)
+    {
+        printf("%serror:%s expected maxval of 255\n", RED, RESET);
+        exit(1);
+    }
+
+    // read pixel data
+    uint8_t image_data[28 * 28];
+    if (fread(image_data, sizeof(uint8_t), 28 * 28, file) != 28 * 28)
+    {
+        printf("%serror:%s failed to read pixel data\n", RED, RESET);
+        exit(1);
+    }
+    fclose(file);
+
+    double *pixel = malloc(width * height * sizeof(double));
+    for (int i = 0; i < 28 * 28; i++)
+    {
+        pixel[i] = ((double)image_data[i]) / 255.0;
+    }
+
+    return pixel;
+}
+
 Dataset load_mnist_dataset(char *path_to_labels, char *path_to_images)
 {
     Dataset dataset;
@@ -474,6 +544,29 @@ Network deserialize_network(FILE *file)
     }
 
     free(dims);
+
+    return network;
+}
+
+Network load_network(char *path)
+{
+
+    FILE *file = fopen(path, "rb");
+    if (file == NULL)
+    {
+        printf("%serror:%s '%s' does not exist\n", RED, RESET, path);
+        exit(1);
+    }
+
+    Network network = deserialize_network(file);
+    fclose(file);
+
+    printf("info: loaded model '%s' with size %d", path, network.dims[0]);
+    for (int i = 1; i < network.ndim; i++)
+    {
+        printf("x%d", network.dims[i]);
+    }
+    printf("\n");
 
     return network;
 }
