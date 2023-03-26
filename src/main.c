@@ -100,6 +100,7 @@ int bench()
 int run(char *model_path, char *image_path)
 {
     double *data = load_pgm_image(image_path);
+
     FILE *file = fopen(model_path, "rb");
     if (file == NULL)
     {
@@ -121,6 +122,9 @@ int run(char *model_path, char *image_path)
     int prediction = arg_max(network.neurons[network.ndim - 1]);
 
     printf("model prediction: %s%d%s\n", BOLD, prediction, RESET);
+
+    network_destroy(network);
+    free(data);
 
     return 0;
 }
