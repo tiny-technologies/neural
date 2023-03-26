@@ -547,3 +547,26 @@ Network deserialize_network(FILE *file)
 
     return network;
 }
+
+Network load_network(char *path)
+{
+
+    FILE *file = fopen(path, "rb");
+    if (file == NULL)
+    {
+        printf("%serror:%s '%s' does not exist\n", RED, RESET, path);
+        exit(1);
+    }
+
+    Network network = deserialize_network(file);
+    fclose(file);
+
+    printf("info: loaded model '%s' with size %d", path, network.dims[0]);
+    for (int i = 1; i < network.ndim; i++)
+    {
+        printf("x%d", network.dims[i]);
+    }
+    printf("\n");
+
+    return network;
+}

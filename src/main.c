@@ -99,24 +99,8 @@ int bench()
 
 int run(char *model_path, char *image_path)
 {
+    Network network = load_network(model_path);
     double *data = load_pgm_image(image_path);
-
-    FILE *file = fopen(model_path, "rb");
-    if (file == NULL)
-    {
-        printf("%serror:%s '%s' does not exist\n", RED, RESET, model_path);
-        exit(1);
-    }
-
-    Network network = deserialize_network(file);
-    fclose(file);
-
-    printf("info: loaded model '%s' with size %d", model_path, network.dims[0]);
-    for (int i = 1; i < network.ndim; i++)
-    {
-        printf("x%d", network.dims[i]);
-    }
-    printf("\n");
 
     forward(network, data);
     int prediction = arg_max(network.neurons[network.ndim - 1]);
@@ -131,25 +115,7 @@ int run(char *model_path, char *image_path)
 
 int test(char *model_path)
 {
-    FILE *file = fopen(model_path, "rb");
-    if (file == NULL)
-    {
-        printf("%serror:%s '%s' does not exist\n", RED, RESET, model_path);
-        exit(1);
-    }
-
-    Network network = deserialize_network(file);
-    fclose(file);
-
-    // todo: maybe move this function deserialize_network
-    printf("info: loaded model '%s' with size %d", model_path, network.dims[0]);
-    for (int i = 1; i < network.ndim; i++)
-    {
-        printf("x%d", network.dims[i]);
-    }
-    printf("\n");
-
-    // todo: pass file image from command line instead
+    Network network = load_network(model_path);
     Dataset dataset = load_mnist_dataset("mnist/t10k-labels-idx1-ubyte", "mnist/t10k-images-idx3-ubyte");
     printf("loaded dataset with %d images\n", dataset.size);
 
@@ -357,15 +323,7 @@ int main(int argc, char *argv[])
                 exit(1);
             }
 
-            FILE *file = fopen(input_path, "rb");
-            if (file == NULL)
-            {
-                printf("%serror:%s '%s' does not exist\n", RED, RESET, input_path);
-                exit(1);
-            }
-
-            network = deserialize_network(file);
-            fclose(file);
+            network = load_network(input_path);
         }
         else
         {
@@ -413,12 +371,12 @@ int main(int argc, char *argv[])
             dims[ndim - 1] = 10;
             network = network_create(ndim, dims);
             free(dims);
-        }
 
-        printf("initialized network with layers: %s%d", BOLD, network.dims[0]);
-        for (int i = 1; i < network.ndim; i++)
-            printf("x%d", network.dims[i]);
-        printf("%s\n", RESET);
+            printf("initialized network with layers: %s%d", BOLD, network.dims[0]);
+            for (int i = 1; i < network.ndim; i++)
+                printf("x%d", network.dims[i]);
+            printf("%s\n", RESET);
+        }
 
         return train(network, dataset, batch_size, epochs, learning_rate, output_path);
     }
