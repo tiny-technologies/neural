@@ -387,7 +387,7 @@ double *load_pgm_image(char *path)
 
     if (width != 28 || height != 28)
     {
-        printf("%serror:%s image dimensions must be 28x28.\n", RED, RESET);
+        printf("%serror:%s image dimensions must be 28x28\n", RED, RESET);
         exit(1);
     }
 
@@ -401,7 +401,7 @@ double *load_pgm_image(char *path)
     uint8_t image_data[28 * 28];
     if (fread(image_data, sizeof(uint8_t), 28 * 28, file) != 28 * 28)
     {
-        printf("%serror:%s failed to read pixel data.\n", RED, RESET);
+        printf("%serror:%s failed to read pixel data\n", RED, RESET);
         exit(1);
     }
     fclose(file);
